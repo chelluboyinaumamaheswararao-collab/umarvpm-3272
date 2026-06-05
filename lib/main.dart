@@ -67,6 +67,7 @@ void _setQty(PurchaseItem item, int qty) {
   final text = qty.toString();
 
   setState(() {
+    item.qty = qty;
     item.qtyController.value = TextEditingValue(
       text: text,
       selection: TextSelection.collapsed(offset: text.length),
@@ -4405,10 +4406,29 @@ SizedBox(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
-                                  const SizedBox(width:420),
-                                  SizedBox(width: 420, height: 58, child: _buildField(label: '', hint:'Paid Amount', controller: _paidController, keyboardType: TextInputType.number)),
-                                  const SizedBox(width: 4),
-                                  SizedBox(width: 420, height: 58,
+                                  SizedBox(
+                                    width: 420,
+                                    height: 58,
+                                    child: TextFormField(
+                                      controller: _paidController,
+                                      keyboardType: TextInputType.number,
+                                      onChanged: (_) => setState(() {}),
+                                      decoration: InputDecoration(
+                                        hintText: 'Paid Amount',
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                          borderSide: BorderSide(color: Colors.grey.shade300),
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  SizedBox(
+                                    width: 420,
+                                    height: 58,
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.grey.shade300)),

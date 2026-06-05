@@ -340,7 +340,20 @@ await prefs.setStringList(
     });
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Purchase saved successfully')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        width: 320,
+        content: Center(
+          child: Text(
+            'Purchase saved successfully',
+            style: TextStyle(color: kPrimaryBlue, fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ),
+    );
     await _loadAvailableProducts();
   }
 
@@ -451,52 +464,57 @@ await prefs.setStringList(
                             final it = _items[index];
                             return Container(
                               width: double.infinity,
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(10),
+                              margin: const EdgeInsets.only(bottom: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
-                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Row(children: [
-                                  Expanded(child: Text('${it.product.productCode} - ${it.product.productName}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kPrimaryBlue))),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${it.product.productCode} - ${it.product.productName}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kPrimaryBlue),
+                                    ),
+                                  ),
                                   const SizedBox(width: 8),
-                                  Text('Stock: ${it.product.currentStock}', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                                ]),
-                                const SizedBox(height: 8),
-                                Wrap(spacing: 8, runSpacing: 8, children: [
                                   SizedBox(
-  width: 90,
-  child: DropdownButtonFormField<String>(
-           isExpanded: true,
-           isDense: true,
-           value: const ['Nos', 'Bag', 'Box', 'Feet', 'Kg', 'Liter', 'Other']
-            .contains(it.unitController.text)
-        ? it.unitController.text
-        : 'Nos',
-    decoration: InputDecoration(
-      labelText: 'Unit',
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
-      ),
-    ),
-    items: const ['Nos', 'Bag', 'Box', 'Feet', 'Kg', 'Liter', 'Other']
-        .map((unit) => DropdownMenuItem(
-              value: unit,
-              child: Text(unit),
-            ))
-        .toList(),
-    onChanged: (value) {
-      if (value == null) return;
-      setState(() {
-        it.unitController.text = value;
-      });
-    },
-  ),
-),
+                                    width: 90,
+                                    height: 44,
+                                    child: DropdownButtonFormField<String>(
+                                      isExpanded: true,
+                                      isDense: true,
+                                      value: const ['Nos', 'Bag', 'Box', 'Feet', 'Kg', 'Liter', 'Other'].contains(it.unitController.text)
+                                          ? it.unitController.text
+                                          : 'Nos',
+                                      decoration: InputDecoration(
+                                        labelText: 'Unit',
+                                        filled: true,
+                                        fillColor: Colors.white,
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: Colors.grey.shade300),
+                                        ),
+                                      ),
+                                      items: const ['Nos', 'Bag', 'Box', 'Feet', 'Kg', 'Liter', 'Other']
+                                          .map((unit) => DropdownMenuItem(
+                                                value: unit,
+                                                child: Text(unit),
+                                              ))
+                                          .toList(),
+                                      onChanged: (value) {
+                                        if (value == null) return;
+                                        setState(() {
+                                          it.unitController.text = value;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
                                   SizedBox(
                                     width: 120,
+                                    height: 44,
                                     child: TextFormField(
                                       controller: it.rateController,
                                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -513,22 +531,100 @@ await prefs.setStringList(
                                       onChanged: (_) => setState(() {}),
                                     ),
                                   ),
-                                  Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)), child: Row(children: [IconButton(onPressed: it.qty > 1 ? () => _setQty(it, it.qty - 1) : null, icon: const Icon(Icons.remove, size: 18), padding: EdgeInsets.zero, constraints: BoxConstraints(minWidth: 30, minHeight: 30)), SizedBox(width: 46, child: TextFormField(controller: it.qtyController, onTap: () { it.qtyController.selection = TextSelection(baseOffset: 0, extentOffset: it.qtyController.text.length); },
-                                  onChanged: (value) {
-                                     final qty = 
-                                  int.tryParse(value.trim());
-                                    if (qty == null || qty < 1) return;
-                                    setState(() {
-                                      it.qty = qty;
-                                   });
-                                 }, 
-                                 keyboardType: TextInputType.number, 
-                                 textAlign: TextAlign.center, 
-                                 decoration: const InputDecoration(border: InputBorder.none, isDense: true))), IconButton(onPressed: () => _setQty(it, it.qty + 1), icon: const Icon(Icons.add, size: 18), padding: EdgeInsets.zero, constraints: BoxConstraints(minWidth: 30, minHeight: 30))])),
-                                  Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), decoration: BoxDecoration(color: kLightBlue, borderRadius: BorderRadius.circular(12)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Total', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))), const SizedBox(height: 4), Text('₹${it.total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kPrimaryBlue))])),
-                                  IconButton(onPressed: () => _deleteItem(index), icon: const Icon(Icons.delete_outline, color: Colors.redAccent)),
-                                ]),
-                              ]),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    width: 132,
+                                    height: 44,
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.grey.shade300),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        IconButton(
+                                          onPressed: it.qty > 1 ? () => _setQty(it, it.qty - 1) : null,
+                                          icon: const Icon(Icons.remove, size: 18),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                                        ),
+                                        SizedBox(
+                                          width: 40,
+                                          child: TextFormField(
+                                            controller: it.qtyController,
+                                            onTap: () {
+                                              it.qtyController.selection = TextSelection(
+                                                baseOffset: 0,
+                                                extentOffset: it.qtyController.text.length,
+                                              );
+                                            },
+                                            onChanged: (value) {
+                                              final qty = int.tryParse(value.trim());
+                                              if (qty == null || qty < 1) return;
+                                              setState(() {
+                                                it.qty = qty;
+                                              });
+                                            },
+                                            keyboardType: TextInputType.number,
+                                            textAlign: TextAlign.center,
+                                            decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          onPressed: () => _setQty(it, it.qty + 1),
+                                          icon: const Icon(Icons.add, size: 18),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    width: 110,
+                                    height: 50,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(color: kLightBlue, borderRadius: BorderRadius.circular(12)),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Text('Total', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '₹${it.total.toStringAsFixed(2)}',
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kPrimaryBlue),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 40,
+                                    height: 40,
+                                    child: IconButton(
+                                      onPressed: () => _deleteItem(index),
+                                      padding: EdgeInsets.zero,
+                                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 70,
+                                    height: 40,
+                                    child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        'Stock: ${it.product.currentStock}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             );
                           })),
                       ]),

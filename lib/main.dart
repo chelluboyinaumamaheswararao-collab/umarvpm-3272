@@ -1755,29 +1755,17 @@ entry = OverlayEntry(
     child: Material(
   color: Colors.transparent,
   child: Center(
-    child: Container(
-    child: Material(
-      color: Colors.transparent,
-      child: Container(
-        width: 120,
-        height: 32,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: kPrimaryBlue,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Text(
-          '✓ Product Updated',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-),
-          ),
-        ),
-),     ),
+    child: const Text(
+      'Product Updated',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        color: kPrimaryBlue,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
     ),
   ),
+),
 ));
 
 overlay.insert(entry);
@@ -1807,26 +1795,18 @@ entry = OverlayEntry(
     child: Material(
   color: Colors.transparent,
   child: Center(
-    child: Container(
-        width: 120,
-        height: 32,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: kPrimaryBlue,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Text(
-          '✓ Product Saved',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-),
-          ),
-        ),
+    child: const Text(
+      'Product Saved',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        color: kPrimaryBlue,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
       ),
     ),
   ),
+),
+),
 );
 
 overlay.insert(entry);

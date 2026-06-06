@@ -1319,11 +1319,12 @@ class _PartiesPageState extends State<PartiesPage> {
         title: const Text('Parties', style: TextStyle(fontWeight: FontWeight.w700)),
         elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             const Text('Parties', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
             const SizedBox(height: 6),
             const Text('Customer and Supplier master', style: TextStyle(fontSize: 15, color: Color(0xFF64748B))),
@@ -1437,11 +1438,87 @@ class _PartiesPageState extends State<PartiesPage> {
                         _uploadPlaceholder(label: 'QR Scanner Upload', width: 180),
                       ],
                     ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        _actionButton(label: 'Save Party', width: 150),
+                        const SizedBox(width: 10),
+                        _actionButton(label: 'Update Party', width: 150),
+                        const SizedBox(width: 10),
+                        _actionButton(label: 'Delete Party', width: 140),
+                        const SizedBox(width: 10),
+                        _actionButton(label: 'Clear', width: 120),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Saved Parties',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kPrimaryBlue),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: kPrimaryBlue,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          _savedPartyHeaderCell('Party Name', width: 220),
+                          _savedPartyHeaderCell('Type', width: 110),
+                          _savedPartyHeaderCell('Category', width: 180),
+                          _savedPartyHeaderCell('Mobile', width: 150),
+                          _savedPartyHeaderCell('Balance', width: 130),
+                          _savedPartyHeaderCell('Due Status', width: 140),
+                          _savedPartyHeaderCell('Edit', width: 60),
+                          _savedPartyHeaderCell('Delete', width: 70),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 52,
+                      child: Center(
+                        child: Text('No parties saved yet', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
-          ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _actionButton({required String label, required double width}) {
+    return SizedBox(
+      width: width,
+      height: 46,
+      child: ElevatedButton(
+        onPressed: () {},
+        style: ElevatedButton.styleFrom(
+          backgroundColor: kPrimaryBlue,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        ),
+        child: Text(label),
+      ),
+    );
+  }
+
+  Widget _savedPartyHeaderCell(String label, {required double width}) {
+    return SizedBox(
+      width: width,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Text(
+          label,
+          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
         ),
       ),
     );

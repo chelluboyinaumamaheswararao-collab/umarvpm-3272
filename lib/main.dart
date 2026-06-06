@@ -949,6 +949,7 @@ class _MenuCard extends StatelessWidget {
             MaterialPageRoute(
               builder: (context) {
                 if (item.label == 'Company') return const CompanyProfilePage();
+                if (item.label == 'Parties') return const PartiesPage();
                 if (item.label == 'Sales') return const SalesDashboardPage();
                 if (item.label == 'Purchase') return const PurchasePage();
                 if (item.label == 'Sales Return') return const SalesReturnPage();
@@ -1271,6 +1272,47 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                 );
               },
             ),
+    );
+  }
+}
+
+class PartiesPage extends StatefulWidget {
+  const PartiesPage({super.key});
+
+  @override
+  State<PartiesPage> createState() => _PartiesPageState();
+}
+
+class _PartiesPageState extends State<PartiesPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Parties', style: TextStyle(fontWeight: FontWeight.w700)),
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Parties', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+            const SizedBox(height: 6),
+            const Text('Customer and Supplier master', style: TextStyle(fontSize: 15, color: Color(0xFF64748B))),
+            const SizedBox(height: 16),
+            Card(
+              color: kCardBlue,
+              child: const Padding(
+                padding: EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Text('Manual form area', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

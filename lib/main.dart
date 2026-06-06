@@ -1287,6 +1287,8 @@ class _PartiesPageState extends State<PartiesPage> {
   String _partyType = 'Customer';
   String _category = 'Cement';
   String _gstinAvailable = 'No';
+  String _balanceType = 'Zero';
+  String _paymentTerms = 'Cash';
 
   static const List<String> _categoryOptions = [
     'Cement',
@@ -1374,6 +1376,38 @@ class _PartiesPageState extends State<PartiesPage> {
                         ),
                         const SizedBox(width: 12),
                         _textField(label: 'GSTIN', width: 260),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Balance / Due Details',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kPrimaryBlue),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _textField(label: 'Opening Balance', width: 220),
+                        const SizedBox(width: 12),
+                        _dropdownField(
+                          label: 'Balance Type',
+                          width: 200,
+                          value: _balanceType,
+                          options: const ['Receivable', 'Payable', 'Zero'],
+                          onChanged: (value) => setState(() => _balanceType = value),
+                        ),
+                        const SizedBox(width: 12),
+                        _dropdownField(
+                          label: 'Payment Terms',
+                          width: 180,
+                          value: _paymentTerms,
+                          options: const ['Cash', '7 Days', '15 Days', '30 Days'],
+                          onChanged: (value) => setState(() => _paymentTerms = value),
+                        ),
+                        const SizedBox(width: 12),
+                        _textField(label: 'Due Date', width: 180),
+                        const SizedBox(width: 12),
+                        _textField(label: 'Alert Before Days', width: 180),
                       ],
                     ),
                   ],

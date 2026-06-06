@@ -1305,6 +1305,7 @@ class _PartiesPageState extends State<PartiesPage> {
   String _balanceType = 'Zero';
   String _paymentTerms = 'Cash';
   String _partyMessage = '';
+  int? _selectedPartyIndex;
   int _messageToken = 0;
 
   static const List<String> _categoryOptions = [
@@ -1479,9 +1480,7 @@ class _PartiesPageState extends State<PartiesPage> {
                       children: [
                         _actionButton(label: 'Save Party', width: 150, onPressed: _saveParty),
                         const SizedBox(width: 10),
-                        _actionButton(label: 'Update Party', width: 150),
-                        const SizedBox(width: 10),
-                        _actionButton(label: 'Delete Party', width: 140),
+                        _actionButton(label: 'Update Party', width: 150, onPressed: _updateParty),
                         const SizedBox(width: 10),
                         _actionButton(label: 'Clear', width: 120),
                       ],
@@ -1515,8 +1514,9 @@ class _PartiesPageState extends State<PartiesPage> {
                           _savedPartyHeaderCell('Mobile', width: 150),
                           _savedPartyHeaderCell('Balance', width: 130),
                           _savedPartyHeaderCell('Due Status', width: 140),
-                          _savedPartyHeaderCell('Edit', width: 60),
-                          _savedPartyHeaderCell('Delete', width: 70),
+                          _savedPartyHeaderCell('Pay Now', width: 76),
+                          _savedPartyHeaderCell('Edit', width: 58),
+                          _savedPartyHeaderCell('Delete', width: 68),
                         ],
                       ),
                     ),
@@ -1528,7 +1528,7 @@ class _PartiesPageState extends State<PartiesPage> {
                         ),
                       )
                     else
-                      ..._savedParties.map(_savedPartyRow),
+                      ..._savedParties.asMap().entries.map((entry) => _savedPartyRow(entry.key, entry.value)),
                   ],
                 ),
               ),
@@ -1542,31 +1542,88 @@ class _PartiesPageState extends State<PartiesPage> {
 
   void _saveParty() {
     setState(() {
-      _savedParties.add({
-        'partyName': _partyNameController.text,
-        'partyType': _partyType,
-        'mobileNumber': _mobileNumberController.text,
-        'alternateMobile': _alternateMobileController.text,
-        'address': _addressController.text,
-        'category': _category,
-        'gstinAvailable': _gstinAvailable,
-        'gstin': _gstinController.text,
-        'openingBalance': _openingBalanceController.text,
-        'balanceType': _balanceType,
-        'paymentTerms': _paymentTerms,
-        'dueDate': _dueDateController.text,
-        'alertBeforeDays': _alertBeforeDaysController.text,
-        'bankName': _bankNameController.text,
-        'accountHolderName': _accountHolderNameController.text,
-        'accountNumber': _accountNumberController.text,
-        'ifscCode': _ifscCodeController.text,
-        'upiId': _upiIdController.text,
-        'qrScannerUpload': '',
-      });
+      _savedParties.add(_currentPartyData());
       _clearPartyForm();
+      _selectedPartyIndex = null;
       _partyMessage = 'Party saved successfully';
     });
     _hidePartyMessageLater();
+  }
+
+  void _editParty(int index) {
+    final party = _savedParties[index];
+    setState(() {
+      _partyNameController.text = party['partyName'] ?? '';
+      _mobileNumberController.text = party['mobileNumber'] ?? '';
+      _alternateMobileController.text = party['alternateMobile'] ?? '';
+      _addressController.text = party['address'] ?? '';
+      _gstinController.text = party['gstin'] ?? '';
+      _openingBalanceController.text = party['openingBalance'] ?? '';
+      _dueDateController.text = party['dueDate'] ?? '';
+      _alertBeforeDaysController.text = party['alertBeforeDays'] ?? '';
+      _bankNameController.text = party['bankName'] ?? '';
+      _accountHolderNameController.text = party['accountHolderName'] ?? '';
+      _accountNumberController.text = party['accountNumber'] ?? '';
+      _ifscCodeController.text = party['ifscCode'] ?? '';
+      _upiIdController.text = party['upiId'] ?? '';
+      _partyType = party['partyType'] ?? 'Customer';
+      _category = party['category'] ?? 'Cement';
+      _gstinAvailable = party['gstinAvailable'] ?? 'No';
+      _balanceType = party['balanceType'] ?? 'Zero';
+      _paymentTerms = party['paymentTerms'] ?? 'Cash';
+      _selectedPartyIndex = index;
+    });
+  }
+
+  void _updateParty() {
+    final selectedIndex = _selectedPartyIndex;
+    if (selectedIndex == null || selectedIndex < 0 || selectedIndex >= _savedParties.length) return;
+
+    setState(() {
+      _savedParties[selectedIndex] = _currentPartyData();
+      _clearPartyForm();
+      _selectedPartyIndex = null;
+      _partyMessage = 'Party updated successfully';
+    });
+    _hidePartyMessageLater();
+  }
+
+  void _deleteParty(int index) {
+    setState(() {
+      _savedParties.removeAt(index);
+      if (_selectedPartyIndex == index) {
+        _clearPartyForm();
+        _selectedPartyIndex = null;
+      } else if (_selectedPartyIndex != null && _selectedPartyIndex! > index) {
+        _selectedPartyIndex = _selectedPartyIndex! - 1;
+      }
+      _partyMessage = 'Party deleted successfully';
+    });
+    _hidePartyMessageLater();
+  }
+
+  Map<String, String> _currentPartyData() {
+    return {
+      'partyName': _partyNameController.text,
+      'partyType': _partyType,
+      'mobileNumber': _mobileNumberController.text,
+      'alternateMobile': _alternateMobileController.text,
+      'address': _addressController.text,
+      'category': _category,
+      'gstinAvailable': _gstinAvailable,
+      'gstin': _gstinController.text,
+      'openingBalance': _openingBalanceController.text,
+      'balanceType': _balanceType,
+      'paymentTerms': _paymentTerms,
+      'dueDate': _dueDateController.text,
+      'alertBeforeDays': _alertBeforeDaysController.text,
+      'bankName': _bankNameController.text,
+      'accountHolderName': _accountHolderNameController.text,
+      'accountNumber': _accountNumberController.text,
+      'ifscCode': _ifscCodeController.text,
+      'upiId': _upiIdController.text,
+      'qrScannerUpload': '',
+    };
   }
 
   void _clearPartyForm() {
@@ -1616,7 +1673,7 @@ class _PartiesPageState extends State<PartiesPage> {
     );
   }
 
-  Widget _savedPartyRow(Map<String, String> party) {
+  Widget _savedPartyRow(int index, Map<String, String> party) {
     return SizedBox(
       height: 42,
       child: Row(
@@ -1627,8 +1684,9 @@ class _PartiesPageState extends State<PartiesPage> {
           _savedPartyCell(party['mobileNumber'] ?? '', width: 150),
           _savedPartyCell(party['openingBalance'] ?? '', width: 130),
           _savedPartyCell(party['balanceType'] ?? '', width: 140),
-          _savedPartyCell('Edit', width: 60),
-          _savedPartyCell('Delete', width: 70),
+          _savedPartyActionButton(label: 'Pay Now', width: 76, color: const Color(0xFF16A34A), onPressed: () {}),
+          _savedPartyActionButton(label: 'Edit', width: 58, color: kPrimaryBlue, onPressed: () => _editParty(index)),
+          _savedPartyActionButton(label: 'Delete', width: 68, color: const Color(0xFFDC2626), onPressed: () => _deleteParty(index)),
         ],
       ),
     );
@@ -1643,6 +1701,36 @@ class _PartiesPageState extends State<PartiesPage> {
           value,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 13, color: Color(0xFF475467)),
+        ),
+      ),
+    );
+  }
+
+  Widget _savedPartyActionButton({
+    required String label,
+    required double width,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: width,
+      height: 42,
+      child: Center(
+        child: SizedBox(
+          width: width,
+          height: 30,
+          child: ElevatedButton(
+            onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+            ),
+            child: Text(label),
+          ),
         ),
       ),
     );

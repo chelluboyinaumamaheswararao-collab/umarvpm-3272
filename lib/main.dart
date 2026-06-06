@@ -51,6 +51,8 @@ class _PurchasePageState extends State<PurchasePage> {
   final List<ProductMaster> _availableProducts = [];
   final List<ProductMaster> _filteredProducts = [];
   final List<PurchaseItem> _items = [];
+  final List<Map<String, String>> _supplierParties = [];
+  final List<Map<String, String>> _filteredSupplierParties = [];
   double get _grandTotal {
   double total = 0;
   for (final item in _items) {
@@ -93,6 +95,58 @@ void _deleteItem(int index) {
     _searchController.addListener(() => _updateSearch(_searchController.text));
     _loadAvailableProducts();
     _loadLastPurchaseNumber();
+    _loadSupplierParties();
+  }
+
+  Future<void> _loadSupplierParties() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedParties = prefs.getString('parties_list');
+    if (savedParties == null || savedParties.isEmpty) return;
+
+    final dynamic decodedParties;
+    try {
+      decodedParties = jsonDecode(savedParties);
+    } catch (_) {
+      return;
+    }
+    if (decodedParties is! List) return;
+
+    final parties = decodedParties
+        .whereType<Map>()
+        .map((party) => party.map((key, value) => MapEntry(key.toString(), value?.toString() ?? '')))
+        .where((party) => party['partyType'] == 'Supplier' || party['partyType'] == 'Both')
+        .toList();
+
+    if (!mounted) return;
+    setState(() {
+      _supplierParties
+        ..clear()
+        ..addAll(parties);
+    });
+  }
+
+  void _updateSupplierPartySuggestions(String query) {
+    final text = query.trim().toLowerCase();
+    setState(() {
+      if (text.isEmpty) {
+        _filteredSupplierParties.clear();
+      } else {
+        _filteredSupplierParties
+          ..clear()
+          ..addAll(_supplierParties.where((party) {
+            final partyName = (party['partyName'] ?? '').toLowerCase();
+            final mobile = (party['mobileNumber'] ?? '').toLowerCase();
+            return partyName.contains(text) || mobile.contains(text);
+          }));
+      }
+    });
+  }
+
+  void _selectSupplierParty(Map<String, String> party) {
+    setState(() {
+      _supplierController.text = party['partyName'] ?? '';
+      _filteredSupplierParties.clear();
+    });
   }
 
   String _formatDate(DateTime date) {
@@ -357,6 +411,55 @@ await prefs.setStringList(
     await _loadAvailableProducts();
   }
 
+  Widget _buildSupplierPartySuggestions() {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxHeight: 220),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          children: _filteredSupplierParties.map((party) {
+            final partyName = party['partyName'] ?? '';
+            final mobile = party['mobileNumber'] ?? '';
+            final category = party['category'] ?? '';
+            return InkWell(
+              onTap: () => _selectSupplierParty(party),
+              child: SizedBox(
+                height: 52,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          partyName,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kPrimaryBlue),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          [mobile, category].where((value) => value.isNotEmpty).join(' | '),
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _supplierController.dispose();
@@ -408,7 +511,12 @@ await prefs.setStringList(
                             TextFormField(
                               controller: _supplierController,
                               decoration: InputDecoration(labelText: 'Supplier / Party', hintText: 'Supplier name', filled: true, fillColor: Colors.white),
+                              onChanged: _updateSupplierPartySuggestions,
                             ),
+                            if (_filteredSupplierParties.isNotEmpty)
+                              const SizedBox(height: 8),
+                            if (_filteredSupplierParties.isNotEmpty)
+                              _buildSupplierPartySuggestions(),
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _searchController,

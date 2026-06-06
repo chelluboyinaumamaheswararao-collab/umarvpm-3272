@@ -1332,6 +1332,12 @@ class _PartiesPageState extends State<PartiesPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadParties();
+  }
+
+  @override
   void dispose() {
     _partyNameController.dispose();
     _mobileNumberController.dispose();
@@ -1486,7 +1492,7 @@ class _PartiesPageState extends State<PartiesPage> {
                         const SizedBox(width: 10),
                         _actionButton(label: 'Update Party', width: 150, onPressed: _updateParty),
                         const SizedBox(width: 10),
-                        _actionButton(label: 'Clear', width: 120),
+                        _actionButton(label: 'Clear', width: 120, onPressed: _clearPartySelection),
                       ],
                     ),
                     if (_partyMessage.isNotEmpty) ...[
@@ -1551,6 +1557,7 @@ class _PartiesPageState extends State<PartiesPage> {
       _selectedPartyIndex = null;
       _partyMessage = 'Party saved successfully';
     });
+    _persistParties();
     _hidePartyMessageLater();
   }
 
@@ -1590,6 +1597,7 @@ class _PartiesPageState extends State<PartiesPage> {
       _selectedPartyIndex = null;
       _partyMessage = 'Party updated successfully';
     });
+    _persistParties();
     _hidePartyMessageLater();
   }
 
@@ -1604,7 +1612,39 @@ class _PartiesPageState extends State<PartiesPage> {
       }
       _partyMessage = 'Party deleted successfully';
     });
+    _persistParties();
     _hidePartyMessageLater();
+  }
+
+  Future<void> _loadParties() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedParties = prefs.getString('parties_list');
+    if (savedParties == null || savedParties.isEmpty) return;
+
+    final dynamic decodedParties;
+    try {
+      decodedParties = jsonDecode(savedParties);
+    } catch (_) {
+      return;
+    }
+    if (decodedParties is! List) return;
+
+    final parties = decodedParties
+        .whereType<Map>()
+        .map((party) => party.map((key, value) => MapEntry(key.toString(), value?.toString() ?? '')))
+        .toList();
+
+    if (!mounted) return;
+    setState(() {
+      _savedParties
+        ..clear()
+        ..addAll(parties);
+    });
+  }
+
+  Future<void> _persistParties() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('parties_list', jsonEncode(_savedParties));
   }
 
   Map<String, String> _currentPartyData() {
@@ -1652,6 +1692,13 @@ class _PartiesPageState extends State<PartiesPage> {
     _gstinAvailable = 'No';
     _balanceType = 'Zero';
     _paymentTerms = 'Cash';
+  }
+
+  void _clearPartySelection() {
+    setState(() {
+      _clearPartyForm();
+      _selectedPartyIndex = null;
+    });
   }
 
   void _hidePartyMessageLater() {

@@ -1284,6 +1284,32 @@ class PartiesPage extends StatefulWidget {
 }
 
 class _PartiesPageState extends State<PartiesPage> {
+  String _partyType = 'Customer';
+  String _category = 'Cement';
+  String _gstinAvailable = 'No';
+
+  static const List<String> _categoryOptions = [
+    'Cement',
+    'Steel',
+    'Sand & Aggregates',
+    'Bricks & Blocks',
+    'Tiles',
+    'Granite & Marble',
+    'Sanitary Ware',
+    'Plumbing',
+    'Electrical',
+    'Paints',
+    'Doors & Frames',
+    'Windows & Glass',
+    'Ceiling Materials',
+    'Hardware',
+    'Waterproofing Chemicals',
+    'Wood & Plywood',
+    'Interior Materials',
+    'Gates & Railings',
+    'Others',
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1302,16 +1328,105 @@ class _PartiesPageState extends State<PartiesPage> {
             const SizedBox(height: 16),
             Card(
               color: kCardBlue,
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: Text('Manual form area', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _textField(label: 'Party Name', width: 320),
+                        const SizedBox(width: 12),
+                        _dropdownField(
+                          label: 'Party Type',
+                          width: 180,
+                          value: _partyType,
+                          options: const ['Customer', 'Supplier', 'Both'],
+                          onChanged: (value) => setState(() => _partyType = value),
+                        ),
+                        const SizedBox(width: 12),
+                        _textField(label: 'Mobile Number', width: 220),
+                        const SizedBox(width: 12),
+                        _textField(label: 'Alternate Mobile', width: 220),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _textField(label: 'Address', width: 520),
+                        const SizedBox(width: 12),
+                        _dropdownField(
+                          label: 'Category',
+                          width: 260,
+                          value: _category,
+                          options: _categoryOptions,
+                          onChanged: (value) => setState(() => _category = value),
+                        ),
+                        const SizedBox(width: 12),
+                        _dropdownField(
+                          label: 'GSTIN Available',
+                          width: 160,
+                          value: _gstinAvailable,
+                          options: const ['Yes', 'No'],
+                          onChanged: (value) => setState(() => _gstinAvailable = value),
+                        ),
+                        const SizedBox(width: 12),
+                        _textField(label: 'GSTIN', width: 260),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _textField({required String label, required double width}) {
+    return SizedBox(
+      width: width,
+      height: 52,
+      child: TextFormField(
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+    );
+  }
+
+  Widget _dropdownField({
+    required String label,
+    required double width,
+    required String value,
+    required List<String> options,
+    required ValueChanged<String> onChanged,
+  }) {
+    return SizedBox(
+      width: width,
+      height: 52,
+      child: DropdownButtonFormField<String>(
+        initialValue: value,
+        isExpanded: true,
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        items: options.map((option) => DropdownMenuItem(value: option, child: Text(option))).toList(),
+        onChanged: (value) {
+          if (value == null) return;
+          onChanged(value);
+        },
       ),
     );
   }

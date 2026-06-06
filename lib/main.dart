@@ -1297,6 +1297,7 @@ class _PartiesPageState extends State<PartiesPage> {
   final _accountNumberController = TextEditingController();
   final _ifscCodeController = TextEditingController();
   final _upiIdController = TextEditingController();
+  final _upiMobileNumberController = TextEditingController();
   final List<Map<String, String>> _savedParties = [];
 
   String _partyType = 'Customer';
@@ -1345,6 +1346,7 @@ class _PartiesPageState extends State<PartiesPage> {
     _accountNumberController.dispose();
     _ifscCodeController.dispose();
     _upiIdController.dispose();
+    _upiMobileNumberController.dispose();
     super.dispose();
   }
 
@@ -1471,6 +1473,8 @@ class _PartiesPageState extends State<PartiesPage> {
                       children: [
                         _textField(label: 'UPI ID', width: 260, controller: _upiIdController),
                         const SizedBox(width: 12),
+                        _textField(label: 'UPI Mobile Number', width: 220, controller: _upiMobileNumberController),
+                        const SizedBox(width: 12),
                         _uploadPlaceholder(label: 'QR Scanner Upload', width: 180),
                       ],
                     ),
@@ -1566,6 +1570,7 @@ class _PartiesPageState extends State<PartiesPage> {
       _accountNumberController.text = party['accountNumber'] ?? '';
       _ifscCodeController.text = party['ifscCode'] ?? '';
       _upiIdController.text = party['upiId'] ?? '';
+      _upiMobileNumberController.text = party['upiMobileNumber'] ?? '';
       _partyType = party['partyType'] ?? 'Customer';
       _category = party['category'] ?? 'Cement';
       _gstinAvailable = party['gstinAvailable'] ?? 'No';
@@ -1622,6 +1627,7 @@ class _PartiesPageState extends State<PartiesPage> {
       'accountNumber': _accountNumberController.text,
       'ifscCode': _ifscCodeController.text,
       'upiId': _upiIdController.text,
+      'upiMobileNumber': _upiMobileNumberController.text,
       'qrScannerUpload': '',
     };
   }
@@ -1640,6 +1646,7 @@ class _PartiesPageState extends State<PartiesPage> {
     _accountNumberController.clear();
     _ifscCodeController.clear();
     _upiIdController.clear();
+    _upiMobileNumberController.clear();
     _partyType = 'Customer';
     _category = 'Cement';
     _gstinAvailable = 'No';

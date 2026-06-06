@@ -4449,6 +4449,8 @@ class _NewSalePageState extends State<NewSalePage> {
   final List<ProductMaster> _availableProducts = [];
   final List<ProductMaster> _filteredProducts = [];
   final List<SaleEntry> _saleItems = [];
+  final List<Map<String, String>> _customerParties = [];
+  final List<Map<String, String>> _filteredCustomerParties = [];
 
   @override
   void initState() {
@@ -4458,6 +4460,58 @@ class _NewSalePageState extends State<NewSalePage> {
     _searchController.addListener(() => _updateSearch(_searchController.text));
     _loadAvailableProducts();
     _loadLastNumbers();
+    _loadCustomerParties();
+  }
+
+  Future<void> _loadCustomerParties() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedParties = prefs.getString('parties_list');
+    if (savedParties == null || savedParties.isEmpty) return;
+
+    final dynamic decodedParties;
+    try {
+      decodedParties = jsonDecode(savedParties);
+    } catch (_) {
+      return;
+    }
+    if (decodedParties is! List) return;
+
+    final parties = decodedParties
+        .whereType<Map>()
+        .map((party) => party.map((key, value) => MapEntry(key.toString(), value?.toString() ?? '')))
+        .where((party) => party['partyType'] == 'Customer' || party['partyType'] == 'Both')
+        .toList();
+
+    if (!mounted) return;
+    setState(() {
+      _customerParties
+        ..clear()
+        ..addAll(parties);
+    });
+  }
+
+  void _updateCustomerPartySuggestions(String query) {
+    final text = query.trim().toLowerCase();
+    setState(() {
+      if (text.isEmpty) {
+        _filteredCustomerParties.clear();
+      } else {
+        _filteredCustomerParties
+          ..clear()
+          ..addAll(_customerParties.where((party) {
+            final partyName = (party['partyName'] ?? '').toLowerCase();
+            final mobile = (party['mobileNumber'] ?? '').toLowerCase();
+            return partyName.contains(text) || mobile.contains(text);
+          }));
+      }
+    });
+  }
+
+  void _selectCustomerParty(Map<String, String> party) {
+    setState(() {
+      _customerController.text = party['partyName'] ?? '';
+      _filteredCustomerParties.clear();
+    });
   }
 
   Future<void> _loadAvailableProducts() async {
@@ -4589,6 +4643,7 @@ class _NewSalePageState extends State<NewSalePage> {
     setState(() {
       _saleItems.clear();
       _customerController.clear();
+      _filteredCustomerParties.clear();
       _paidController.text = '0';
       _searchController.clear();
       _searchQuery = '';
@@ -4715,6 +4770,55 @@ class _NewSalePageState extends State<NewSalePage> {
         fillColor: Colors.white,
         
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade300)),
+      ),
+    );
+  }
+
+  Widget _buildCustomerPartySuggestions() {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxHeight: 220),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          children: _filteredCustomerParties.map((party) {
+          final partyName = party['partyName'] ?? '';
+          final mobile = party['mobileNumber'] ?? '';
+          final category = party['category'] ?? '';
+          return InkWell(
+            onTap: () => _selectCustomerParty(party),
+            child: SizedBox(
+              height: 52,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        partyName,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kPrimaryBlue),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        [mobile, category].where((value) => value.isNotEmpty).join(' | '),
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -4952,6 +5056,7 @@ SizedBox(
                                 label: 'Customer / Party Search',
                                 controller: _customerController,
                                 hint: 'Search customer or party',
+                                onChanged: _updateCustomerPartySuggestions,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
                                     return 'Customer name is required';
@@ -4959,6 +5064,10 @@ SizedBox(
                                   return null;
                                 },
                               ),
+                              if (_filteredCustomerParties.isNotEmpty)
+                                const SizedBox(height: 8),
+                              if (_filteredCustomerParties.isNotEmpty)
+                                _buildCustomerPartySuggestions(),
                               const SizedBox(height: 12),
                               DropdownButtonFormField<String>(
                                 initialValue: _saleType,

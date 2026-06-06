@@ -1284,11 +1284,28 @@ class PartiesPage extends StatefulWidget {
 }
 
 class _PartiesPageState extends State<PartiesPage> {
+  final _partyNameController = TextEditingController();
+  final _mobileNumberController = TextEditingController();
+  final _alternateMobileController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _gstinController = TextEditingController();
+  final _openingBalanceController = TextEditingController();
+  final _dueDateController = TextEditingController();
+  final _alertBeforeDaysController = TextEditingController();
+  final _bankNameController = TextEditingController();
+  final _accountHolderNameController = TextEditingController();
+  final _accountNumberController = TextEditingController();
+  final _ifscCodeController = TextEditingController();
+  final _upiIdController = TextEditingController();
+  final List<Map<String, String>> _savedParties = [];
+
   String _partyType = 'Customer';
   String _category = 'Cement';
   String _gstinAvailable = 'No';
   String _balanceType = 'Zero';
   String _paymentTerms = 'Cash';
+  String _partyMessage = '';
+  int _messageToken = 0;
 
   static const List<String> _categoryOptions = [
     'Cement',
@@ -1311,6 +1328,24 @@ class _PartiesPageState extends State<PartiesPage> {
     'Gates & Railings',
     'Others',
   ];
+
+  @override
+  void dispose() {
+    _partyNameController.dispose();
+    _mobileNumberController.dispose();
+    _alternateMobileController.dispose();
+    _addressController.dispose();
+    _gstinController.dispose();
+    _openingBalanceController.dispose();
+    _dueDateController.dispose();
+    _alertBeforeDaysController.dispose();
+    _bankNameController.dispose();
+    _accountHolderNameController.dispose();
+    _accountNumberController.dispose();
+    _ifscCodeController.dispose();
+    _upiIdController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1339,7 +1374,7 @@ class _PartiesPageState extends State<PartiesPage> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _textField(label: 'Party Name', width: 320),
+                        _textField(label: 'Party Name', width: 320, controller: _partyNameController),
                         const SizedBox(width: 12),
                         _dropdownField(
                           label: 'Party Type',
@@ -1349,16 +1384,16 @@ class _PartiesPageState extends State<PartiesPage> {
                           onChanged: (value) => setState(() => _partyType = value),
                         ),
                         const SizedBox(width: 12),
-                        _textField(label: 'Mobile Number', width: 220),
+                        _textField(label: 'Mobile Number', width: 220, controller: _mobileNumberController),
                         const SizedBox(width: 12),
-                        _textField(label: 'Alternate Mobile', width: 220),
+                        _textField(label: 'Alternate Mobile', width: 220, controller: _alternateMobileController),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _textField(label: 'Address', width: 520),
+                        _textField(label: 'Address', width: 520, controller: _addressController),
                         const SizedBox(width: 12),
                         _dropdownField(
                           label: 'Category',
@@ -1376,7 +1411,7 @@ class _PartiesPageState extends State<PartiesPage> {
                           onChanged: (value) => setState(() => _gstinAvailable = value),
                         ),
                         const SizedBox(width: 12),
-                        _textField(label: 'GSTIN', width: 260),
+                        _textField(label: 'GSTIN', width: 260, controller: _gstinController),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -1388,7 +1423,7 @@ class _PartiesPageState extends State<PartiesPage> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _textField(label: 'Opening Balance', width: 220),
+                        _textField(label: 'Opening Balance', width: 220, controller: _openingBalanceController),
                         const SizedBox(width: 12),
                         _dropdownField(
                           label: 'Balance Type',
@@ -1406,9 +1441,9 @@ class _PartiesPageState extends State<PartiesPage> {
                           onChanged: (value) => setState(() => _paymentTerms = value),
                         ),
                         const SizedBox(width: 12),
-                        _textField(label: 'Due Date', width: 180),
+                        _textField(label: 'Due Date', width: 180, controller: _dueDateController),
                         const SizedBox(width: 12),
-                        _textField(label: 'Alert Before Days', width: 180),
+                        _textField(label: 'Alert Before Days', width: 180, controller: _alertBeforeDaysController),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -1420,20 +1455,20 @@ class _PartiesPageState extends State<PartiesPage> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _textField(label: 'Bank Name', width: 260),
+                        _textField(label: 'Bank Name', width: 260, controller: _bankNameController),
                         const SizedBox(width: 12),
-                        _textField(label: 'Account Holder Name', width: 300),
+                        _textField(label: 'Account Holder Name', width: 300, controller: _accountHolderNameController),
                         const SizedBox(width: 12),
-                        _textField(label: 'Account Number', width: 260),
+                        _textField(label: 'Account Number', width: 260, controller: _accountNumberController),
                         const SizedBox(width: 12),
-                        _textField(label: 'IFSC Code', width: 180),
+                        _textField(label: 'IFSC Code', width: 180, controller: _ifscCodeController),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _textField(label: 'UPI ID', width: 260),
+                        _textField(label: 'UPI ID', width: 260, controller: _upiIdController),
                         const SizedBox(width: 12),
                         _uploadPlaceholder(label: 'QR Scanner Upload', width: 180),
                       ],
@@ -1442,7 +1477,7 @@ class _PartiesPageState extends State<PartiesPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        _actionButton(label: 'Save Party', width: 150),
+                        _actionButton(label: 'Save Party', width: 150, onPressed: _saveParty),
                         const SizedBox(width: 10),
                         _actionButton(label: 'Update Party', width: 150),
                         const SizedBox(width: 10),
@@ -1451,6 +1486,15 @@ class _PartiesPageState extends State<PartiesPage> {
                         _actionButton(label: 'Clear', width: 120),
                       ],
                     ),
+                    if (_partyMessage.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Center(
+                        child: Text(
+                          _partyMessage,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: kPrimaryBlue),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 20),
                     const Text(
                       'Saved Parties',
@@ -1476,12 +1520,15 @@ class _PartiesPageState extends State<PartiesPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(
-                      height: 52,
-                      child: Center(
-                        child: Text('No parties saved yet', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
-                      ),
-                    ),
+                    if (_savedParties.isEmpty)
+                      const SizedBox(
+                        height: 52,
+                        child: Center(
+                          child: Text('No parties saved yet', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
+                        ),
+                      )
+                    else
+                      ..._savedParties.map(_savedPartyRow),
                   ],
                 ),
               ),
@@ -1493,12 +1540,70 @@ class _PartiesPageState extends State<PartiesPage> {
     );
   }
 
-  Widget _actionButton({required String label, required double width}) {
+  void _saveParty() {
+    setState(() {
+      _savedParties.add({
+        'partyName': _partyNameController.text,
+        'partyType': _partyType,
+        'mobileNumber': _mobileNumberController.text,
+        'alternateMobile': _alternateMobileController.text,
+        'address': _addressController.text,
+        'category': _category,
+        'gstinAvailable': _gstinAvailable,
+        'gstin': _gstinController.text,
+        'openingBalance': _openingBalanceController.text,
+        'balanceType': _balanceType,
+        'paymentTerms': _paymentTerms,
+        'dueDate': _dueDateController.text,
+        'alertBeforeDays': _alertBeforeDaysController.text,
+        'bankName': _bankNameController.text,
+        'accountHolderName': _accountHolderNameController.text,
+        'accountNumber': _accountNumberController.text,
+        'ifscCode': _ifscCodeController.text,
+        'upiId': _upiIdController.text,
+        'qrScannerUpload': '',
+      });
+      _clearPartyForm();
+      _partyMessage = 'Party saved successfully';
+    });
+    _hidePartyMessageLater();
+  }
+
+  void _clearPartyForm() {
+    _partyNameController.clear();
+    _mobileNumberController.clear();
+    _alternateMobileController.clear();
+    _addressController.clear();
+    _gstinController.clear();
+    _openingBalanceController.clear();
+    _dueDateController.clear();
+    _alertBeforeDaysController.clear();
+    _bankNameController.clear();
+    _accountHolderNameController.clear();
+    _accountNumberController.clear();
+    _ifscCodeController.clear();
+    _upiIdController.clear();
+    _partyType = 'Customer';
+    _category = 'Cement';
+    _gstinAvailable = 'No';
+    _balanceType = 'Zero';
+    _paymentTerms = 'Cash';
+  }
+
+  void _hidePartyMessageLater() {
+    final token = ++_messageToken;
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted || token != _messageToken) return;
+      setState(() => _partyMessage = '');
+    });
+  }
+
+  Widget _actionButton({required String label, required double width, VoidCallback? onPressed}) {
     return SizedBox(
       width: width,
       height: 46,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: onPressed ?? () {},
         style: ElevatedButton.styleFrom(
           backgroundColor: kPrimaryBlue,
           foregroundColor: Colors.white,
@@ -1507,6 +1612,38 @@ class _PartiesPageState extends State<PartiesPage> {
           textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
         ),
         child: Text(label),
+      ),
+    );
+  }
+
+  Widget _savedPartyRow(Map<String, String> party) {
+    return SizedBox(
+      height: 42,
+      child: Row(
+        children: [
+          _savedPartyCell(party['partyName'] ?? '', width: 220),
+          _savedPartyCell(party['partyType'] ?? '', width: 110),
+          _savedPartyCell(party['category'] ?? '', width: 180),
+          _savedPartyCell(party['mobileNumber'] ?? '', width: 150),
+          _savedPartyCell(party['openingBalance'] ?? '', width: 130),
+          _savedPartyCell(party['balanceType'] ?? '', width: 140),
+          _savedPartyCell('Edit', width: 60),
+          _savedPartyCell('Delete', width: 70),
+        ],
+      ),
+    );
+  }
+
+  Widget _savedPartyCell(String value, {required double width}) {
+    return SizedBox(
+      width: width,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Text(
+          value,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 13, color: Color(0xFF475467)),
+        ),
       ),
     );
   }
@@ -1541,11 +1678,12 @@ class _PartiesPageState extends State<PartiesPage> {
     );
   }
 
-  Widget _textField({required String label, required double width}) {
+  Widget _textField({required String label, required double width, TextEditingController? controller}) {
     return SizedBox(
       width: width,
       height: 52,
       child: TextFormField(
+        controller: controller,
         decoration: InputDecoration(
           labelText: label,
           filled: true,
@@ -1568,6 +1706,7 @@ class _PartiesPageState extends State<PartiesPage> {
       width: width,
       height: 52,
       child: DropdownButtonFormField<String>(
+        key: ValueKey('$label-$value'),
         initialValue: value,
         isExpanded: true,
         decoration: InputDecoration(

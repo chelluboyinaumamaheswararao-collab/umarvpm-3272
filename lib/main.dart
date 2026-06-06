@@ -1289,8 +1289,6 @@ class _PartiesPageState extends State<PartiesPage> {
   String _gstinAvailable = 'No';
   String _balanceType = 'Zero';
   String _paymentTerms = 'Cash';
-  String _paymentMethod = 'UPI';
-  String _myBank = 'SBI';
 
   static const List<String> _categoryOptions = [
     'Cement',
@@ -1312,20 +1310,6 @@ class _PartiesPageState extends State<PartiesPage> {
     'Interior Materials',
     'Gates & Railings',
     'Others',
-  ];
-
-  static const List<String> _bankOptions = [
-    'SBI',
-    'HDFC Bank',
-    'ICICI Bank',
-    'Axis Bank',
-    'Kotak Mahindra Bank',
-    'Union Bank',
-    'Canara Bank',
-    'Bank of Baroda',
-    'Indian Bank',
-    'PNB',
-    'Other',
   ];
 
   @override
@@ -1452,29 +1436,6 @@ class _PartiesPageState extends State<PartiesPage> {
                         _textField(label: 'UPI ID', width: 260),
                         const SizedBox(width: 12),
                         _uploadPlaceholder(label: 'QR Scanner Upload', width: 180),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _dropdownField(
-                          label: 'Payment Method',
-                          width: 180,
-                          value: _paymentMethod,
-                          options: const ['UPI', 'Net Banking'],
-                          onChanged: (value) => setState(() => _paymentMethod = value),
-                        ),
-                        const SizedBox(width: 12),
-                        _dropdownField(
-                          label: 'My Bank',
-                          width: 260,
-                          value: _myBank,
-                          options: _bankOptions,
-                          onChanged: (value) => setState(() => _myBank = value),
-                        ),
-                        const SizedBox(width: 12),
-                        _actionButton(label: 'Open Payment', width: 160),
                       ],
                     ),
                     const SizedBox(height: 20),

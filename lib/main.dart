@@ -4500,7 +4500,7 @@ SizedBox(
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
                                   SizedBox(
-                                    width: 420,
+                                    width: 280,
                                     height: 58,
                                     child: TextFormField(
                                       controller: _paidController,
@@ -4520,7 +4520,7 @@ SizedBox(
                                   ),
                                   const SizedBox(width: 12),
                                   SizedBox(
-                                    width: 420,
+                                    width: 280,
                                     height: 58,
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

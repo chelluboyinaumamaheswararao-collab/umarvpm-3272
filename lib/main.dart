@@ -1016,6 +1016,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
   final _websiteController = TextEditingController();
   String _gstAvailable = 'No';
   bool _loading = true;
+  bool _showCompanySaveSuccessMessage = false;
 
   @override
   void initState() {
@@ -1053,13 +1054,15 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
     await prefs.setString('website', _websiteController.text.trim());
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Company details saved successfully'),
-        backgroundColor: kPrimaryBlue,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    setState(() {
+      _showCompanySaveSuccessMessage = true;
+    });
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      setState(() {
+        _showCompanySaveSuccessMessage = false;
+      });
+    });
   }
 
   @override
@@ -1214,6 +1217,20 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                                       keyboardType: TextInputType.url,
                                     ),
                                     const SizedBox(height: 4),
+                                    if (_showCompanySaveSuccessMessage) ...[
+                                      const Center(
+                                        child: Text(
+                                          'Company details saved successfully',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: kPrimaryBlue,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                    ],
                                     Row(
                                       children: [
                                         Expanded(

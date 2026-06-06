@@ -1410,12 +1410,56 @@ class _PartiesPageState extends State<PartiesPage> {
                         _textField(label: 'Alert Before Days', width: 180),
                       ],
                     ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Supplier Payment Details',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kPrimaryBlue),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _textField(label: 'Bank Name', width: 260),
+                        const SizedBox(width: 12),
+                        _textField(label: 'Account Holder Name', width: 300),
+                        const SizedBox(width: 12),
+                        _textField(label: 'Account Number', width: 260),
+                        const SizedBox(width: 12),
+                        _textField(label: 'IFSC Code', width: 180),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _textField(label: 'UPI ID', width: 260),
+                        const SizedBox(width: 12),
+                        _uploadPlaceholder(label: 'QR Scanner Upload', width: 180),
+                      ],
+                    ),
                   ],
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _uploadPlaceholder({required String label, required double width}) {
+    return SizedBox(
+      width: width,
+      height: 52,
+      child: OutlinedButton(
+        onPressed: () {},
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFF475467),
+          side: const BorderSide(color: Color(0xFF64748B)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: Text(label, textAlign: TextAlign.center),
       ),
     );
   }

@@ -4732,6 +4732,7 @@ class _NewSalePageState extends State<NewSalePage> {
 
   Future<void> _saveSaleAndPrepareNext() async {
     await _saveHistoryEntry();
+    await _updateSelectedPartyReceivableBalance();
     if (!_isEstimate) {
       await _decrementStockForSale();
       await _loadAvailableProducts();
@@ -4823,6 +4824,47 @@ class _NewSalePageState extends State<NewSalePage> {
     );
     saved.insert(0, jsonEncode(entry.toJson()));
     await prefs.setStringList('sales_history', saved);
+  }
+
+  Future<void> _updateSelectedPartyReceivableBalance() async {
+    if (_isEstimate) return;
+
+    final saleBalance = _balance;
+    final customerName = _customerController.text.trim();
+    if (saleBalance <= 0 || customerName.isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final savedParties = prefs.getString('parties_list');
+    if (savedParties == null || savedParties.isEmpty) return;
+
+    final dynamic decodedParties;
+    try {
+      decodedParties = jsonDecode(savedParties);
+    } catch (_) {
+      return;
+    }
+    if (decodedParties is! List) return;
+
+    var updated = false;
+    final updatedParties = decodedParties.map((party) {
+      if (party is! Map) return party;
+
+      final partyMap = Map<String, dynamic>.from(party);
+      final partyName = (partyMap['partyName'] ?? '').toString().trim();
+      final partyType = (partyMap['partyType'] ?? '').toString();
+      final isCustomerParty = partyType == 'Customer' || partyType == 'Both';
+      if (updated || !isCustomerParty || partyName != customerName) return partyMap;
+
+      final existingBalance = double.tryParse((partyMap['openingBalance'] ?? '0').toString()) ?? 0.0;
+      partyMap['openingBalance'] = (existingBalance + saleBalance).toStringAsFixed(2);
+      partyMap['balanceType'] = 'Receivable';
+      updated = true;
+      return partyMap;
+    }).toList();
+
+    if (updated) {
+      await prefs.setString('parties_list', jsonEncode(updatedParties));
+    }
   }
 
   void _showSaleSnackBar(String message) {

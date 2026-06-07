@@ -1,4 +1,6 @@
 import 'dart:convert';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1455,6 +1457,7 @@ class _PartiesPageState extends State<PartiesPage> {
   String _gstinAvailable = 'No';
   String _balanceType = 'Zero';
   String _paymentTerms = 'Cash';
+  String _qrScannerUploadData = '';
   String _partyMessage = '';
   int? _selectedPartyIndex;
   int _messageToken = 0;
@@ -1631,7 +1634,7 @@ class _PartiesPageState extends State<PartiesPage> {
                         const SizedBox(width: 12),
                         _textField(label: 'UPI Mobile Number', width: 220, controller: _upiMobileNumberController),
                         const SizedBox(width: 12),
-                        _uploadPlaceholder(label: 'QR Scanner Upload', width: 180),
+                        _uploadPlaceholder(label: _qrScannerUploadData.isEmpty ? 'QR Scanner Upload' : 'QR Uploaded', width: 180),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -1728,6 +1731,7 @@ class _PartiesPageState extends State<PartiesPage> {
       _ifscCodeController.text = party['ifscCode'] ?? '';
       _upiIdController.text = party['upiId'] ?? '';
       _upiMobileNumberController.text = party['upiMobileNumber'] ?? '';
+      _qrScannerUploadData = party['qrScannerUpload'] ?? '';
       _partyType = party['partyType'] ?? 'Customer';
       _category = party['category'] ?? 'Cement';
       _gstinAvailable = party['gstinAvailable'] ?? 'No';
@@ -1818,7 +1822,7 @@ class _PartiesPageState extends State<PartiesPage> {
       'ifscCode': _ifscCodeController.text,
       'upiId': _upiIdController.text,
       'upiMobileNumber': _upiMobileNumberController.text,
-      'qrScannerUpload': '',
+      'qrScannerUpload': _qrScannerUploadData,
     };
   }
 
@@ -1837,6 +1841,7 @@ class _PartiesPageState extends State<PartiesPage> {
     _ifscCodeController.clear();
     _upiIdController.clear();
     _upiMobileNumberController.clear();
+    _qrScannerUploadData = '';
     _partyType = 'Customer';
     _category = 'Cement';
     _gstinAvailable = 'No';
@@ -1860,8 +1865,12 @@ class _PartiesPageState extends State<PartiesPage> {
   }
 
   void _showPayNowDialog(Map<String, String> party) {
-    var paymentMethod = 'UPI';
+    var paymentMethod = 'QR Payment';
     var myBank = 'SBI';
+    var otherBankName = '';
+    var payNowMessage = '';
+    var payNowMessageToken = 0;
+    var isPayNowDialogOpen = true;
 
     showDialog<void>(
       context: context,
@@ -1897,49 +1906,96 @@ class _PartiesPageState extends State<PartiesPage> {
                       const SizedBox(height: 10),
                       _payNowDetails(party),
                       const SizedBox(height: 18),
-                      const Text(
-                        'Payment Options',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: kPrimaryBlue),
-                      ),
-                      const SizedBox(height: 10),
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final fieldWidth = constraints.maxWidth >= 470 ? (constraints.maxWidth - 10) / 2 : constraints.maxWidth;
-                          return Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _payNowDropdown(
-                                label: 'Payment Method',
-                                width: fieldWidth,
-                                value: paymentMethod,
-                                options: const ['UPI', 'Net Banking'],
-                                onChanged: (value) => setDialogState(() => paymentMethod = value),
-                              ),
-                              _payNowDropdown(
-                                label: 'My Bank',
-                                width: fieldWidth,
-                                value: myBank,
-                                options: const [
-                                  'SBI',
-                                  'HDFC Bank',
-                                  'ICICI Bank',
-                                  'Axis Bank',
-                                  'Kotak Mahindra Bank',
-                                  'Union Bank',
-                                  'Canara Bank',
-                                  'Bank of Baroda',
-                                  'Indian Bank',
-                                  'PNB',
-                                  'Other',
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  _payNowDropdown(
+                                    label: 'Payment Method',
+                                    width: fieldWidth,
+                                    value: paymentMethod,
+                                    options: const ['QR Payment', 'UPI App', 'Mobile Banking', 'Net Banking'],
+                                    onChanged: (value) => setDialogState(() => paymentMethod = value),
+                                  ),
+                                  _payNowDropdown(
+                                    label: 'My Bank',
+                                    width: fieldWidth,
+                                    value: myBank,
+                                    options: const [
+                                      'SBI',
+                                      'HDFC Bank',
+                                      'ICICI Bank',
+                                      'Axis Bank',
+                                      'Kotak Mahindra Bank',
+                                      'Canara Bank',
+                                      'Bank of Baroda',
+                                      'Punjab National Bank',
+                                      'PNB',
+                                      'Union Bank of India',
+                                      'Indian Bank',
+                                      'Bank of India',
+                                      'Central Bank of India',
+                                      'Indian Overseas Bank',
+                                      'Yes Bank',
+                                      'IDFC FIRST Bank',
+                                      'IndusInd Bank',
+                                      'Federal Bank',
+                                      'South Indian Bank',
+                                      'Karnataka Bank',
+                                      'Karur Vysya Bank',
+                                      'City Union Bank',
+                                      'AU Small Finance Bank',
+                                      'Bandhan Bank',
+                                      'RBL Bank',
+                                      'DBS Bank',
+                                      'Other',
+                                    ],
+                                    onChanged: (value) => setDialogState(() => myBank = value),
+                                  ),
                                 ],
-                                onChanged: (value) => setDialogState(() => myBank = value),
                               ),
+                              if (myBank == 'Other') ...[
+                                const SizedBox(height: 10),
+                                Align(
+                                  alignment: constraints.maxWidth >= 470 ? Alignment.centerRight : Alignment.centerLeft,
+                                  child: SizedBox(
+                                    width: fieldWidth,
+                                    height: 52,
+                                    child: TextFormField(
+                                      initialValue: otherBankName,
+                                      onChanged: (value) => otherBankName = value,
+                                      decoration: InputDecoration(
+                                        labelText: 'Enter Bank Name',
+                                        filled: true,
+                                        fillColor: Colors.white,
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           );
                         },
                       ),
                       const SizedBox(height: 18),
+                      if (payNowMessage.isNotEmpty) ...[
+                        Center(
+                          child: Text(
+                            payNowMessage,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFFDC2626)),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -1959,7 +2015,20 @@ class _PartiesPageState extends State<PartiesPage> {
                           SizedBox(
                             height: 48,
                             child: ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () => _continuePayNow(
+                                party: party,
+                                paymentMethod: paymentMethod,
+                                myBank: myBank,
+                                otherBankName: otherBankName,
+                                showMessage: (message) {
+                                  final token = ++payNowMessageToken;
+                                  setDialogState(() => payNowMessage = message);
+                                  Future.delayed(const Duration(seconds: 2), () {
+                                    if (!mounted || !isPayNowDialogOpen || token != payNowMessageToken) return;
+                                    setDialogState(() => payNowMessage = '');
+                                  });
+                                },
+                              ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: kPrimaryBlue,
                                 foregroundColor: Colors.white,
@@ -1981,7 +2050,72 @@ class _PartiesPageState extends State<PartiesPage> {
           ),
         );
       },
-    );
+    ).whenComplete(() => isPayNowDialogOpen = false);
+  }
+
+  void _continuePayNow({
+    required Map<String, String> party,
+    required String paymentMethod,
+    required String myBank,
+    required String otherBankName,
+    required ValueChanged<String> showMessage,
+  }) {
+    if (paymentMethod == 'QR Payment') {
+      showMessage('Scan QR using any UPI app');
+      return;
+    }
+
+    if (myBank == 'Other') {
+      final typedBankName = otherBankName.trim();
+      if (typedBankName.isEmpty) {
+        showMessage('Please enter bank name');
+        return;
+      }
+
+      final query = Uri.encodeComponent('$typedBankName official net banking');
+      _openPayNowLink('https://www.google.com/search?q=$query');
+      return;
+    }
+
+    const bankUrls = {
+      'SBI': 'https://retail.onlinesbi.sbi',
+      'HDFC Bank': 'https://netbanking.hdfcbank.com/netbanking/',
+      'ICICI Bank': 'https://retailnetbanking.icici.bank.in/',
+      'Axis Bank': 'https://www.axis.bank.in/bank-smart/internet-banking',
+      'Kotak Mahindra Bank': 'https://netbanking.kotak.com',
+      'Canara Bank': 'https://canarabank.com',
+      'Bank of Baroda': 'https://bobibanking.com',
+      'Punjab National Bank': 'https://ibanking.pnb.bank.in',
+      'PNB': 'https://ibanking.pnb.bank.in',
+      'Union Bank of India': 'https://www.unionbankonline.co.in',
+      'Indian Bank': 'https://www.netbanking.indianbank.in',
+      'Bank of India': 'https://bankofindia.co.in',
+      'Central Bank of India': 'https://www.centralbankofindia.co.in',
+      'Indian Overseas Bank': 'https://www.iob.in',
+      'Yes Bank': 'https://www.yesbank.in',
+      'IDFC FIRST Bank': 'https://www.idfcfirstbank.com',
+      'IndusInd Bank': 'https://www.indusind.com',
+      'Federal Bank': 'https://www.federalbank.co.in',
+      'South Indian Bank': 'https://www.southindianbank.com',
+      'Karnataka Bank': 'https://karnatakabank.com',
+      'Karur Vysya Bank': 'https://www.kvb.co.in',
+      'City Union Bank': 'https://www.cityunionbank.com',
+      'AU Small Finance Bank': 'https://www.aubank.in',
+      'Bandhan Bank': 'https://bandhanbank.com',
+      'RBL Bank': 'https://www.rblbank.com',
+      'DBS Bank': 'https://www.dbs.com/in',
+    };
+    final bankUrl = bankUrls[myBank];
+    if (bankUrl == null) {
+      showMessage('Please open your bank website manually');
+      return;
+    }
+
+    _openPayNowLink(bankUrl);
+  }
+
+  void _openPayNowLink(String url) {
+    html.window.open(url, '_blank');
   }
 
   Widget _payNowDetails(Map<String, String> party) {
@@ -2007,8 +2141,127 @@ class _PartiesPageState extends State<PartiesPage> {
             _payNowDetailTile(label: 'Party Name', value: _payNowValue(party['partyName']), width: constraints.maxWidth),
             for (final detail in details)
               _payNowDetailTile(label: detail['label'] ?? '', value: detail['value'] ?? '-', width: tileWidth),
-            _payNowDetailTile(label: 'QR Scanner', value: 'QR Scanner placeholder text', width: constraints.maxWidth),
+            _payNowQrTile(qrImageData: party['qrScannerUpload'] ?? '', width: constraints.maxWidth),
           ],
+        );
+      },
+    );
+  }
+
+  Widget _payNowQrTile({required String qrImageData, required double width}) {
+    final trimmedQrImageData = qrImageData.trim();
+
+    return SizedBox(
+      width: width,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('QR Scanner', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+              const SizedBox(height: 8),
+              if (trimmedQrImageData.isEmpty)
+                const Text(
+                  'QR not uploaded',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                )
+              else
+                Center(
+                  child: _payNowQrCard(qrImageData: trimmedQrImageData, size: 300, onTap: () => _showPayNowQrPreview(trimmedQrImageData)),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _payNowQrCard({required String qrImageData, required double size, VoidCallback? onTap}) {
+    final qrBytes = base64Decode(qrImageData.contains(',') ? qrImageData.split(',').last : qrImageData);
+
+    final card = DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Scan QR', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.memory(
+                qrBytes,
+                width: size,
+                height: size,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const SizedBox(
+                    width: 210,
+                    height: 48,
+                    child: Center(
+                      child: Text(
+                        'QR not uploaded',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (onTap == null) return card;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: card,
+    );
+  }
+
+  void _showPayNowQrPreview(String qrImageData) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _payNowQrCard(qrImageData: qrImageData, size: 320),
+                const SizedBox(height: 18),
+                SizedBox(
+                  height: 48,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: kPrimaryBlue,
+                      side: const BorderSide(color: kPrimaryBlue),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Close'),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -2176,7 +2429,7 @@ class _PartiesPageState extends State<PartiesPage> {
       width: width,
       height: 52,
       child: OutlinedButton(
-        onPressed: () {},
+        onPressed: _pickQrScannerUpload,
         style: OutlinedButton.styleFrom(
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF475467),
@@ -2186,6 +2439,23 @@ class _PartiesPageState extends State<PartiesPage> {
         child: Text(label, textAlign: TextAlign.center),
       ),
     );
+  }
+
+  void _pickQrScannerUpload() {
+    final uploadInput = html.FileUploadInputElement()..accept = 'image/*';
+    uploadInput.click();
+    uploadInput.onChange.first.then((_) {
+      final files = uploadInput.files;
+      if (files == null || files.isEmpty) return;
+
+      final reader = html.FileReader();
+      reader.onLoadEnd.first.then((_) {
+        final result = reader.result;
+        if (!mounted || result is! String) return;
+        setState(() => _qrScannerUploadData = result);
+      });
+      reader.readAsDataUrl(files.first);
+    });
   }
 
   Widget _textField({required String label, required double width, TextEditingController? controller}) {

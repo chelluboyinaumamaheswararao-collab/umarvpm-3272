@@ -375,6 +375,8 @@ await prefs.setStringList(
   prodList.map((p) => jsonEncode(p.toJson())).toList(),
 );
 
+    await _updateSelectedSupplierPayableBalance();
+
     // increment last purchase number
     final current = _lastPurchaseNumber + 1;
     await prefs.setInt('last_purchase_number', current);
@@ -409,6 +411,46 @@ await prefs.setStringList(
       ),
     );
     await _loadAvailableProducts();
+  }
+
+  Future<void> _updateSelectedSupplierPayableBalance() async {
+    final purchaseBalance = _grandTotal;
+    final supplierName = _supplierController.text.trim();
+    if (purchaseBalance <= 0 || supplierName.isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final savedParties = prefs.getString('parties_list');
+    if (savedParties == null || savedParties.isEmpty) return;
+
+    final dynamic decodedParties;
+    try {
+      decodedParties = jsonDecode(savedParties);
+    } catch (_) {
+      return;
+    }
+    if (decodedParties is! List) return;
+
+    final supplierKey = supplierName.toLowerCase();
+    var updated = false;
+    final updatedParties = decodedParties.map((party) {
+      if (party is! Map) return party;
+
+      final partyMap = Map<String, dynamic>.from(party);
+      final partyName = (partyMap['partyName'] ?? '').toString().trim().toLowerCase();
+      final partyType = (partyMap['partyType'] ?? '').toString();
+      final isSupplierParty = partyType == 'Supplier' || partyType == 'Both';
+      if (updated || !isSupplierParty || partyName != supplierKey) return partyMap;
+
+      final existingBalance = double.tryParse((partyMap['openingBalance'] ?? '0').toString()) ?? 0.0;
+      partyMap['openingBalance'] = (existingBalance + purchaseBalance).toStringAsFixed(2);
+      partyMap['balanceType'] = 'Payable';
+      updated = true;
+      return partyMap;
+    }).toList();
+
+    if (updated) {
+      await prefs.setString('parties_list', jsonEncode(updatedParties));
+    }
   }
 
   Widget _buildSupplierPartySuggestions() {

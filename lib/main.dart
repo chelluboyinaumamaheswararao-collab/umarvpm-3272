@@ -1859,6 +1859,224 @@ class _PartiesPageState extends State<PartiesPage> {
     });
   }
 
+  void _showPayNowDialog(Map<String, String> party) {
+    var paymentMethod = 'UPI';
+    var myBank = 'SBI';
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        final screenHeight = MediaQuery.of(dialogContext).size.height;
+        final maxDialogHeight = screenHeight * 0.85;
+
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: 520, maxHeight: maxDialogHeight),
+            child: StatefulBuilder(
+              builder: (context, setDialogState) {
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Pay Now', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+                      const SizedBox(height: 4),
+                      Text(
+                        _payNowValue(party['partyName']),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF475467)),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Party Details',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: kPrimaryBlue),
+                      ),
+                      const SizedBox(height: 10),
+                      _payNowDetails(party),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Payment Options',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: kPrimaryBlue),
+                      ),
+                      const SizedBox(height: 10),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final fieldWidth = constraints.maxWidth >= 470 ? (constraints.maxWidth - 10) / 2 : constraints.maxWidth;
+                          return Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              _payNowDropdown(
+                                label: 'Payment Method',
+                                width: fieldWidth,
+                                value: paymentMethod,
+                                options: const ['UPI', 'Net Banking'],
+                                onChanged: (value) => setDialogState(() => paymentMethod = value),
+                              ),
+                              _payNowDropdown(
+                                label: 'My Bank',
+                                width: fieldWidth,
+                                value: myBank,
+                                options: const [
+                                  'SBI',
+                                  'HDFC Bank',
+                                  'ICICI Bank',
+                                  'Axis Bank',
+                                  'Kotak Mahindra Bank',
+                                  'Union Bank',
+                                  'Canara Bank',
+                                  'Bank of Baroda',
+                                  'Indian Bank',
+                                  'PNB',
+                                  'Other',
+                                ],
+                                onChanged: (value) => setDialogState(() => myBank = value),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          SizedBox(
+                            height: 48,
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: kPrimaryBlue,
+                                side: const BorderSide(color: kPrimaryBlue),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              child: const Text('Close'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          SizedBox(
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: () {},
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: kPrimaryBlue,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                              ),
+                              child: const Text('Continue / Open Payment'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _payNowDetails(Map<String, String> party) {
+    final details = [
+      {'label': 'Balance', 'value': _payNowValue(party['openingBalance'])},
+      {'label': 'Due Status', 'value': _payNowValue(party['balanceType'])},
+      {'label': 'Bank Name', 'value': _payNowValue(party['bankName'])},
+      {'label': 'Account Holder Name', 'value': _payNowValue(party['accountHolderName'])},
+      {'label': 'Account Number', 'value': _payNowValue(party['accountNumber'])},
+      {'label': 'IFSC Code', 'value': _payNowValue(party['ifscCode'])},
+      {'label': 'UPI ID', 'value': _payNowValue(party['upiId'])},
+      {'label': 'UPI Mobile Number', 'value': _payNowValue(party['upiMobileNumber'])},
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tileWidth = constraints.maxWidth >= 470 ? (constraints.maxWidth - 10) / 2 : constraints.maxWidth;
+
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _payNowDetailTile(label: 'Party Name', value: _payNowValue(party['partyName']), width: constraints.maxWidth),
+            for (final detail in details)
+              _payNowDetailTile(label: detail['label'] ?? '', value: detail['value'] ?? '-', width: tileWidth),
+            _payNowDetailTile(label: 'QR Scanner', value: 'QR Scanner placeholder text', width: constraints.maxWidth),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _payNowDetailTile({required String label, required String value, required double width}) {
+    return SizedBox(
+      width: width,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _payNowDropdown({
+    required String label,
+    required double width,
+    required String value,
+    required List<String> options,
+    required ValueChanged<String> onChanged,
+  }) {
+    return SizedBox(
+      width: width,
+      height: 52,
+      child: DropdownButtonFormField<String>(
+        key: ValueKey('pay-now-$label-$value'),
+        initialValue: value,
+        isExpanded: true,
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        items: options.map((option) => DropdownMenuItem(value: option, child: Text(option))).toList(),
+        onChanged: (value) {
+          if (value == null) return;
+          onChanged(value);
+        },
+      ),
+    );
+  }
+
+  String _payNowValue(String? value) {
+    final trimmedValue = value?.trim() ?? '';
+    return trimmedValue.isEmpty ? '-' : trimmedValue;
+  }
+
   Widget _actionButton({required String label, required double width, VoidCallback? onPressed}) {
     return SizedBox(
       width: width,
@@ -1888,7 +2106,7 @@ class _PartiesPageState extends State<PartiesPage> {
           _savedPartyCell(party['mobileNumber'] ?? '', width: 150),
           _savedPartyCell(party['openingBalance'] ?? '', width: 130),
           _savedPartyCell(party['balanceType'] ?? '', width: 140),
-          _savedPartyActionButton(label: 'Pay Now', width: 76, color: const Color(0xFF16A34A), onPressed: () {}),
+          _savedPartyActionButton(label: 'Pay Now', width: 76, color: const Color(0xFF16A34A), onPressed: () => _showPayNowDialog(party)),
           _savedPartyActionButton(label: 'Edit', width: 58, color: kPrimaryBlue, onPressed: () => _editParty(index)),
           _savedPartyActionButton(label: 'Delete', width: 68, color: const Color(0xFFDC2626), onPressed: () => _deleteParty(index)),
         ],

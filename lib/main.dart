@@ -24,11 +24,14 @@ class PurchaseItem {
   int qty;
 
   PurchaseItem({required this.product, this.qty = 1})
-      : qtyController = TextEditingController(text: qty.toString()),
-        rateController = TextEditingController(text: product.purchasePrice.toStringAsFixed(2)),
-        unitController = TextEditingController(text: product.unit);
+    : qtyController = TextEditingController(text: qty.toString()),
+      rateController = TextEditingController(
+        text: product.purchasePrice.toStringAsFixed(2),
+      ),
+      unitController = TextEditingController(text: product.unit);
 
-  double get rate => double.tryParse(rateController.text) ?? product.purchasePrice;
+  double get rate =>
+      double.tryParse(rateController.text) ?? product.purchasePrice;
   double get total => qty * rate;
 
   void dispose() {
@@ -56,39 +59,36 @@ class _PurchasePageState extends State<PurchasePage> {
   final List<Map<String, String>> _supplierParties = [];
   final List<Map<String, String>> _filteredSupplierParties = [];
   double get _grandTotal {
-  double total = 0;
-  for (final item in _items) {
-    final qty = int.tryParse(item.qtyController.text) ?? 0;
-    final rate = double.tryParse(item.rateController.text) ?? 0;
-    total += qty * rate;
+    double total = 0;
+    for (final item in _items) {
+      final qty = int.tryParse(item.qtyController.text) ?? 0;
+      final rate = double.tryParse(item.rateController.text) ?? 0;
+      total += qty * rate;
+    }
+    return total;
   }
-  return total;
-}
 
-void _setQty(PurchaseItem item, int qty) {
-  if (qty < 1) qty = 1;
+  void _setQty(PurchaseItem item, int qty) {
+    if (qty < 1) qty = 1;
 
-  final text = qty.toString();
+    final text = qty.toString();
 
-  setState(() {
-    item.qty = qty;
-    item.qtyController.value = TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
-    );
-  });
-}
+    setState(() {
+      item.qty = qty;
+      item.qtyController.value = TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
+      );
+    });
+  }
 
-void _deleteItem(int index) {
-  setState(() {
-    _items[index].dispose();
-    _items.removeAt(index);
-  });
-}
+  void _deleteItem(int index) {
+    setState(() {
+      _items[index].dispose();
+      _items.removeAt(index);
+    });
+  }
 
-
-
-  
   @override
   void initState() {
     super.initState();
@@ -115,8 +115,15 @@ void _deleteItem(int index) {
 
     final parties = decodedParties
         .whereType<Map>()
-        .map((party) => party.map((key, value) => MapEntry(key.toString(), value?.toString() ?? '')))
-        .where((party) => party['partyType'] == 'Supplier' || party['partyType'] == 'Both')
+        .map(
+          (party) => party.map(
+            (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+          ),
+        )
+        .where(
+          (party) =>
+              party['partyType'] == 'Supplier' || party['partyType'] == 'Both',
+        )
         .toList();
 
     if (!mounted) return;
@@ -135,11 +142,13 @@ void _deleteItem(int index) {
       } else {
         _filteredSupplierParties
           ..clear()
-          ..addAll(_supplierParties.where((party) {
-            final partyName = (party['partyName'] ?? '').toLowerCase();
-            final mobile = (party['mobileNumber'] ?? '').toLowerCase();
-            return partyName.contains(text) || mobile.contains(text);
-          }));
+          ..addAll(
+            _supplierParties.where((party) {
+              final partyName = (party['partyName'] ?? '').toLowerCase();
+              final mobile = (party['mobileNumber'] ?? '').toLowerCase();
+              return partyName.contains(text) || mobile.contains(text);
+            }),
+          );
       }
     });
   }
@@ -175,7 +184,9 @@ void _deleteItem(int index) {
     final saved = prefs.getStringList('product_master_list') ?? [];
     final productMap = <String, ProductMaster>{};
     for (final entry in saved) {
-      final product = ProductMaster.fromJson(jsonDecode(entry) as Map<String, dynamic>);
+      final product = ProductMaster.fromJson(
+        jsonDecode(entry) as Map<String, dynamic>,
+      );
       final key = product.productCode.trim().toLowerCase();
       if (key.isEmpty) continue;
       productMap[key] = product;
@@ -197,18 +208,22 @@ void _deleteItem(int index) {
       } else {
         _filteredProducts
           ..clear()
-          ..addAll(_availableProducts.where((p) {
-            final code = p.productCode.toLowerCase();
-            final name = p.productName.toLowerCase();
-            return code.contains(text) || name.contains(text);
-          }));
+          ..addAll(
+            _availableProducts.where((p) {
+              final code = p.productCode.toLowerCase();
+              final name = p.productName.toLowerCase();
+              return code.contains(text) || name.contains(text);
+            }),
+          );
       }
     });
   }
 
   void _selectProduct(ProductMaster product) {
     final key = product.productCode.trim().toLowerCase();
-    final existingIndex = _items.indexWhere((it) => it.product.productCode.trim().toLowerCase() == key);
+    final existingIndex = _items.indexWhere(
+      (it) => it.product.productCode.trim().toLowerCase() == key,
+    );
     setState(() {
       if (existingIndex >= 0) {
         final it = _items[existingIndex];
@@ -223,59 +238,60 @@ void _deleteItem(int index) {
     });
   }
 
-  
-
-  
-
-  
-
   Future<void> _savePurchase() async {
     // Validate purchase number is not empty
     final purNo = _purController.text.trim();
     if (purNo.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Purchase number cannot be empty')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Purchase number cannot be empty')),
+      );
       return;
     }
 
     if (_items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Add at least one product')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Add at least one product')));
       return;
     }
 
     for (final it in _items) {
-  final qty = int.tryParse(it.qtyController.text.trim()) ?? 0;
-  final rate = double.tryParse(it.rateController.text.trim()) ?? 0;
+      final qty = int.tryParse(it.qtyController.text.trim()) ?? 0;
+      final rate = double.tryParse(it.rateController.text.trim()) ?? 0;
 
-  it.qty = qty;
-  
+      it.qty = qty;
 
-  if (qty <= 0) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Quantity must be greater than 0')),
-    );
-    return;
-  }
+      if (qty <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Quantity must be greater than 0')),
+        );
+        return;
+      }
 
-  if (rate <= 0) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Purchase rate must be greater than 0')),
-    );
-    return;
-  }
-}
+      if (rate <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Purchase rate must be greater than 0')),
+        );
+        return;
+      }
+    }
 
     final prefs = await SharedPreferences.getInstance();
 
     // Check if purchase number already exists
     final existingHistory = prefs.getStringList('purchase_history_list') ?? [];
     final purNoExists = existingHistory.any((entry) {
-      final bill = PurchaseBill.fromJson(jsonDecode(entry) as Map<String, dynamic>);
+      final bill = PurchaseBill.fromJson(
+        jsonDecode(entry) as Map<String, dynamic>,
+      );
       return bill.purchaseNo == purNo;
     });
 
     if (purNoExists) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Purchase number already exists')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Purchase number already exists')),
+      );
       return;
     }
 
@@ -286,14 +302,16 @@ void _deleteItem(int index) {
       supplierName: _supplierController.text.trim(),
       grandTotal: _grandTotal,
       items: _items
-          .map((it) => PurchaseBillItem(
-                productCode: it.product.productCode,
-                productName: it.product.productName,
-                unit: it.unitController.text.trim(),
-                quantity: it.qty,
-                purchaseRate: it.rate,
-                total: it.total,
-              ))
+          .map(
+            (it) => PurchaseBillItem(
+              productCode: it.product.productCode,
+              productName: it.product.productName,
+              unit: it.unitController.text.trim(),
+              quantity: it.qty,
+              purchaseRate: it.rate,
+              total: it.total,
+            ),
+          )
           .toList(),
     );
 
@@ -302,80 +320,85 @@ void _deleteItem(int index) {
     await prefs.setStringList('purchase_history_list', existingHistory);
 
     // Save purchase-wise stock lots
-final lotSaved = prefs.getStringList('purchase_stock_lot_list') ?? [];
-final lotList = lotSaved
-    .map((s) => PurchaseStockLot.fromJson(jsonDecode(s) as Map<String, dynamic>))
-    .toList();
+    final lotSaved = prefs.getStringList('purchase_stock_lot_list') ?? [];
+    final lotList = lotSaved
+        .map(
+          (s) =>
+              PurchaseStockLot.fromJson(jsonDecode(s) as Map<String, dynamic>),
+        )
+        .toList();
 
-int nextLotNumber = lotList.length + 1;
+    int nextLotNumber = lotList.length + 1;
 
-for (final it in _items) {
-  final qty = int.tryParse(it.qtyController.text.trim()) ?? 0;
-  final rate = double.tryParse(it.rateController.text.trim()) ?? 0;
+    for (final it in _items) {
+      final qty = int.tryParse(it.qtyController.text.trim()) ?? 0;
+      final rate = double.tryParse(it.rateController.text.trim()) ?? 0;
 
-  final lotNo =
-      '${it.product.productCode}-B${nextLotNumber.toString().padLeft(3, '0')}';
+      final lotNo =
+          '${it.product.productCode}-B${nextLotNumber.toString().padLeft(3, '0')}';
 
-  lotList.insert(
-    0,
-    PurchaseStockLot(
-      lotNo: lotNo,
-      purchaseNo: _purController.text.trim(),
-      purchaseDate: _dateController.text.trim(),
-      supplierName: _supplierController.text.trim(),
-      productCode: it.product.productCode,
-      productName: it.product.productName,
-      unit: it.product.unit,
-      qty: qty,
-      remainingQty: qty,
-      purchaseRate: rate,
-    ),
-  );
+      lotList.insert(
+        0,
+        PurchaseStockLot(
+          lotNo: lotNo,
+          purchaseNo: _purController.text.trim(),
+          purchaseDate: _dateController.text.trim(),
+          supplierName: _supplierController.text.trim(),
+          productCode: it.product.productCode,
+          productName: it.product.productName,
+          unit: it.product.unit,
+          qty: qty,
+          remainingQty: qty,
+          purchaseRate: rate,
+        ),
+      );
 
-  nextLotNumber++;
-}
+      nextLotNumber++;
+    }
 
-// Save stock lots
-await prefs.setStringList(
-  'purchase_stock_lot_list',
-  lotList.map((e) => jsonEncode(e.toJson())).toList(),
-);
-
-// Update Product Master total stock only
-final prodSaved = prefs.getStringList('product_master_list') ?? [];
-final prodList = prodSaved
-    .map((s) => ProductMaster.fromJson(jsonDecode(s) as Map<String, dynamic>))
-    .toList();
-
-for (final it in _items) {
-  final qty = int.tryParse(it.qtyController.text.trim()) ?? 0;
-  final key = it.product.productCode.trim().toLowerCase();
-
-  final idx = prodList.indexWhere(
-    (p) => p.productCode.trim().toLowerCase() == key,
-  );
-
-  if (idx != -1) {
-    final p = prodList[idx];
-
-    prodList[idx] = ProductMaster(
-      productCode: p.productCode,
-      productName: p.productName,
-      category: p.category,
-      unit: p.unit,
-      purchasePrice: p.purchasePrice,
-      mrpPrice: p.mrpPrice,
-      defaultSalePrice: p.defaultSalePrice,
-      minimumStockAlert: p.minimumStockAlert,
-      currentStock: p.currentStock + qty,
+    // Save stock lots
+    await prefs.setStringList(
+      'purchase_stock_lot_list',
+      lotList.map((e) => jsonEncode(e.toJson())).toList(),
     );
-  }
-}
 
-await prefs.setStringList(
-  'product_master_list',
-  prodList.map((p) => jsonEncode(p.toJson())).toList(),
-);
+    // Update Product Master total stock only
+    final prodSaved = prefs.getStringList('product_master_list') ?? [];
+    final prodList = prodSaved
+        .map(
+          (s) => ProductMaster.fromJson(jsonDecode(s) as Map<String, dynamic>),
+        )
+        .toList();
+
+    for (final it in _items) {
+      final qty = int.tryParse(it.qtyController.text.trim()) ?? 0;
+      final key = it.product.productCode.trim().toLowerCase();
+
+      final idx = prodList.indexWhere(
+        (p) => p.productCode.trim().toLowerCase() == key,
+      );
+
+      if (idx != -1) {
+        final p = prodList[idx];
+
+        prodList[idx] = ProductMaster(
+          productCode: p.productCode,
+          productName: p.productName,
+          category: p.category,
+          unit: p.unit,
+          purchasePrice: p.purchasePrice,
+          mrpPrice: p.mrpPrice,
+          defaultSalePrice: p.defaultSalePrice,
+          minimumStockAlert: p.minimumStockAlert,
+          currentStock: p.currentStock + qty,
+        );
+      }
+    }
+
+    await prefs.setStringList(
+      'product_master_list',
+      prodList.map((p) => jsonEncode(p.toJson())).toList(),
+    );
 
     await _updateSelectedSupplierPayableBalance();
 
@@ -407,7 +430,11 @@ await prefs.setStringList(
         content: Center(
           child: Text(
             'Purchase saved successfully',
-            style: TextStyle(color: kPrimaryBlue, fontSize: 13, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: kPrimaryBlue,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ),
@@ -438,13 +465,20 @@ await prefs.setStringList(
       if (party is! Map) return party;
 
       final partyMap = Map<String, dynamic>.from(party);
-      final partyName = (partyMap['partyName'] ?? '').toString().trim().toLowerCase();
+      final partyName = (partyMap['partyName'] ?? '')
+          .toString()
+          .trim()
+          .toLowerCase();
       final partyType = (partyMap['partyType'] ?? '').toString();
       final isSupplierParty = partyType == 'Supplier' || partyType == 'Both';
-      if (updated || !isSupplierParty || partyName != supplierKey) return partyMap;
+      if (updated || !isSupplierParty || partyName != supplierKey)
+        return partyMap;
 
-      final existingBalance = double.tryParse((partyMap['openingBalance'] ?? '0').toString()) ?? 0.0;
-      partyMap['openingBalance'] = (existingBalance + purchaseBalance).toStringAsFixed(2);
+      final existingBalance =
+          double.tryParse((partyMap['openingBalance'] ?? '0').toString()) ??
+          0.0;
+      partyMap['openingBalance'] = (existingBalance + purchaseBalance)
+          .toStringAsFixed(2);
       partyMap['balanceType'] = 'Payable';
       updated = true;
       return partyMap;
@@ -481,15 +515,25 @@ await prefs.setStringList(
                       Expanded(
                         child: Text(
                           partyName,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kPrimaryBlue),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: kPrimaryBlue,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Flexible(
                         child: Text(
-                          [mobile, category].where((value) => value.isNotEmpty).join(' | '),
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          [
+                            mobile,
+                            category,
+                          ].where((value) => value.isNotEmpty).join(' | '),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF64748B),
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -522,287 +566,560 @@ await prefs.setStringList(
       appBar: AppBar(
         title: const Text('Purchase Entry'),
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      body: LayoutBuilder(builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final maxWidth = width > 1000 ? 980.0 : double.infinity;
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Card(
-                    color: kCardBlue,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Purchase Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
-                            const SizedBox(height: 12),
-                            Row(children: [
-                              Expanded(child: TextFormField(controller: _dateController, decoration: InputDecoration(labelText: 'Date', filled: true, fillColor: Colors.white))),
-                              const SizedBox(width: 10),
-                              Expanded(child: TextFormField(controller: _purController, decoration: InputDecoration(labelText: 'Purchase No', filled: true, fillColor: Colors.white))),
-                            ]),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _supplierController,
-                              decoration: InputDecoration(labelText: 'Supplier / Party', hintText: 'Supplier name', filled: true, fillColor: Colors.white),
-                              onChanged: _updateSupplierPartySuggestions,
-                            ),
-                            if (_filteredSupplierParties.isNotEmpty)
-                              const SizedBox(height: 8),
-                            if (_filteredSupplierParties.isNotEmpty)
-                              _buildSupplierPartySuggestions(),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _searchController,
-                              decoration: InputDecoration(
-                                labelText: 'Search product code or product name',
-                                filled: true,
-                                fillColor: Colors.white,
-                                suffixIcon: _searchQuery.isNotEmpty
-                                    ? IconButton(icon: const Icon(Icons.clear), onPressed: () => _searchController.clear())
-                                    : null,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade300)),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final maxWidth = width > 1000 ? 980.0 : double.infinity;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Card(
+                      color: kCardBlue,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Purchase Details',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: kPrimaryBlue,
+                                ),
                               ),
-                              onChanged: _updateSearch,
-                            ),
-                            const SizedBox(height: 8),
-                            if (_searchQuery.isNotEmpty)
-                              Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
-                                child: _filteredProducts.isEmpty
-                                    ? const Padding(padding: EdgeInsets.all(12), child: Text('No products match your search.', style: TextStyle(color: Color(0xFF64748B))))
-                                    : Column(children: _filteredProducts.map((product) {
-                                        return InkWell(
-                                          onTap: () => _selectProduct(product),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                            child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                                              Expanded(child: Text('${product.productCode} - ${product.productName}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kPrimaryBlue), overflow: TextOverflow.ellipsis)),
-                                              const SizedBox(width: 8),
-                                              Text('Stock: ${product.currentStock}', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                                            ]),
-                                          ),
-                                        );
-                                      }).toList()),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    color: kLightBlue,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        const Text('Purchase Items', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
-                        const SizedBox(height: 8),
-                        if (_items.isEmpty)
-                          const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Center(child: Text('Add products to start the purchase.', style: TextStyle(color: Color(0xFF64748B)))))
-                        else
-                          Column(children: List.generate(_items.length, (index) {
-                            final it = _items[index];
-                            return Container(
-                              width: double.infinity,
-                              margin: const EdgeInsets.only(bottom: 4),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
-                              child: Row(
+                              const SizedBox(height: 12),
+                              Row(
                                 children: [
                                   Expanded(
-                                    child: Text(
-                                      '${it.product.productCode} - ${it.product.productName}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kPrimaryBlue),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    width: 90,
-                                    height: 44,
-                                    child: DropdownButtonFormField<String>(
-                                      isExpanded: true,
-                                      isDense: true,
-                                      value: const ['Nos', 'Bag', 'Box', 'Feet', 'Kg', 'Liter', 'Other'].contains(it.unitController.text)
-                                          ? it.unitController.text
-                                          : 'Nos',
-                                      decoration: InputDecoration(
-                                        labelText: 'Unit',
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(color: Colors.grey.shade300),
-                                        ),
-                                      ),
-                                      items: const ['Nos', 'Bag', 'Box', 'Feet', 'Kg', 'Liter', 'Other']
-                                          .map((unit) => DropdownMenuItem(
-                                                value: unit,
-                                                child: Text(unit),
-                                              ))
-                                          .toList(),
-                                      onChanged: (value) {
-                                        if (value == null) return;
-                                        setState(() {
-                                          it.unitController.text = value;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    width: 120,
-                                    height: 44,
                                     child: TextFormField(
-                                      controller: it.rateController,
-                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      controller: _dateController,
                                       decoration: InputDecoration(
-                                        labelText: 'Purchase',
+                                        labelText: 'Date',
                                         filled: true,
                                         fillColor: Colors.white,
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(color: Colors.grey.shade300),
-                                        ),
                                       ),
-                                      onChanged: (_) => setState(() {}),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    width: 132,
-                                    height: 44,
-                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.grey.shade300),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        IconButton(
-                                          onPressed: it.qty > 1 ? () => _setQty(it, it.qty - 1) : null,
-                                          icon: const Icon(Icons.remove, size: 18),
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-                                        ),
-                                        SizedBox(
-                                          width: 40,
-                                          child: TextFormField(
-                                            controller: it.qtyController,
-                                            onTap: () {
-                                              it.qtyController.selection = TextSelection(
-                                                baseOffset: 0,
-                                                extentOffset: it.qtyController.text.length,
-                                              );
-                                            },
-                                            onChanged: (value) {
-                                              final qty = int.tryParse(value.trim());
-                                              if (qty == null || qty < 1) return;
-                                              setState(() {
-                                                it.qty = qty;
-                                              });
-                                            },
-                                            keyboardType: TextInputType.number,
-                                            textAlign: TextAlign.center,
-                                            decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                                          ),
-                                        ),
-                                        IconButton(
-                                          onPressed: () => _setQty(it, it.qty + 1),
-                                          icon: const Icon(Icons.add, size: 18),
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    width: 110,
-                                    height: 50,
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                    decoration: BoxDecoration(color: kLightBlue, borderRadius: BorderRadius.circular(12)),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const Text('Total', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          '₹${it.total.toStringAsFixed(2)}',
-                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kPrimaryBlue),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    width: 40,
-                                    height: 40,
-                                    child: IconButton(
-                                      onPressed: () => _deleteItem(index),
-                                      padding: EdgeInsets.zero,
-                                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    width: 70,
-                                    height: 40,
-                                    child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        'Stock: ${it.product.currentStock}',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _purController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Purchase No',
+                                        filled: true,
+                                        fillColor: Colors.white,
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
-                            );
-                          })),
-                      ]),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _supplierController,
+                                decoration: InputDecoration(
+                                  labelText: 'Supplier / Party',
+                                  hintText: 'Supplier name',
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                                onChanged: _updateSupplierPartySuggestions,
+                              ),
+                              if (_filteredSupplierParties.isNotEmpty)
+                                const SizedBox(height: 8),
+                              if (_filteredSupplierParties.isNotEmpty)
+                                _buildSupplierPartySuggestions(),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _searchController,
+                                decoration: InputDecoration(
+                                  labelText:
+                                      'Search product code or product name',
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  suffixIcon: _searchQuery.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear),
+                                          onPressed: () =>
+                                              _searchController.clear(),
+                                        )
+                                      : null,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                  ),
+                                ),
+                                onChanged: _updateSearch,
+                              ),
+                              const SizedBox(height: 8),
+                              if (_searchQuery.isNotEmpty)
+                                Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  child: _filteredProducts.isEmpty
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(12),
+                                          child: Text(
+                                            'No products match your search.',
+                                            style: TextStyle(
+                                              color: Color(0xFF64748B),
+                                            ),
+                                          ),
+                                        )
+                                      : Column(
+                                          children: _filteredProducts.map((
+                                            product,
+                                          ) {
+                                            return InkWell(
+                                              onTap: () =>
+                                                  _selectProduct(product),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 10,
+                                                    ),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        '${product.productCode} - ${product.productName}',
+                                                        style: const TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: kPrimaryBlue,
+                                                        ),
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      'Stock: ${product.currentStock}',
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Color(
+                                                          0xFF64748B,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    color: kLightBlue,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                          const Text('Grand Total', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF475467))),
-                          Text('₹${_grandTotal.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
-                        ]),
-                        const SizedBox(height: 12),
-                        SizedBox(width: double.infinity, height: 48, child: FilledButton(onPressed: _savePurchase, style: FilledButton.styleFrom(backgroundColor: kPrimaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))), child: const Text('Save Purchase', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)))),
-                      ]),
+                    const SizedBox(height: 12),
+                    Card(
+                      color: kLightBlue,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Purchase Items',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: kPrimaryBlue,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            if (_items.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                child: Center(
+                                  child: Text(
+                                    'Add products to start the purchase.',
+                                    style: TextStyle(color: Color(0xFF64748B)),
+                                  ),
+                                ),
+                              )
+                            else
+                              Column(
+                                children: List.generate(_items.length, (index) {
+                                  final it = _items[index];
+                                  return Container(
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.only(bottom: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.grey.shade200,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            '${it.product.productCode} - ${it.product.productName}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: kPrimaryBlue,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SizedBox(
+                                          width: 90,
+                                          height: 44,
+                                          child: DropdownButtonFormField<String>(
+                                            isExpanded: true,
+                                            isDense: true,
+                                            value:
+                                                const [
+                                                  'Nos',
+                                                  'Bag',
+                                                  'Box',
+                                                  'Feet',
+                                                  'Kg',
+                                                  'Liter',
+                                                  'Other',
+                                                ].contains(
+                                                  it.unitController.text,
+                                                )
+                                                ? it.unitController.text
+                                                : 'Nos',
+                                            decoration: InputDecoration(
+                                              labelText: 'Unit',
+                                              filled: true,
+                                              fillColor: Colors.white,
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 6,
+                                                  ),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: BorderSide(
+                                                  color: Colors.grey.shade300,
+                                                ),
+                                              ),
+                                            ),
+                                            items:
+                                                const [
+                                                      'Nos',
+                                                      'Bag',
+                                                      'Box',
+                                                      'Feet',
+                                                      'Kg',
+                                                      'Liter',
+                                                      'Other',
+                                                    ]
+                                                    .map(
+                                                      (unit) =>
+                                                          DropdownMenuItem(
+                                                            value: unit,
+                                                            child: Text(unit),
+                                                          ),
+                                                    )
+                                                    .toList(),
+                                            onChanged: (value) {
+                                              if (value == null) return;
+                                              setState(() {
+                                                it.unitController.text = value;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SizedBox(
+                                          width: 120,
+                                          height: 44,
+                                          child: TextFormField(
+                                            controller: it.rateController,
+                                            keyboardType:
+                                                const TextInputType.numberWithOptions(
+                                                  decimal: true,
+                                                ),
+                                            decoration: InputDecoration(
+                                              labelText: 'Purchase',
+                                              filled: true,
+                                              fillColor: Colors.white,
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 12,
+                                                  ),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: BorderSide(
+                                                  color: Colors.grey.shade300,
+                                                ),
+                                              ),
+                                            ),
+                                            onChanged: (_) => setState(() {}),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          width: 132,
+                                          height: 44,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.grey.shade300,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              IconButton(
+                                                onPressed: it.qty > 1
+                                                    ? () => _setQty(
+                                                        it,
+                                                        it.qty - 1,
+                                                      )
+                                                    : null,
+                                                icon: const Icon(
+                                                  Icons.remove,
+                                                  size: 18,
+                                                ),
+                                                padding: EdgeInsets.zero,
+                                                constraints:
+                                                    const BoxConstraints.tightFor(
+                                                      width: 32,
+                                                      height: 32,
+                                                    ),
+                                              ),
+                                              SizedBox(
+                                                width: 40,
+                                                child: TextFormField(
+                                                  controller: it.qtyController,
+                                                  onTap: () {
+                                                    it.qtyController.selection =
+                                                        TextSelection(
+                                                          baseOffset: 0,
+                                                          extentOffset: it
+                                                              .qtyController
+                                                              .text
+                                                              .length,
+                                                        );
+                                                  },
+                                                  onChanged: (value) {
+                                                    final qty = int.tryParse(
+                                                      value.trim(),
+                                                    );
+                                                    if (qty == null || qty < 1)
+                                                      return;
+                                                    setState(() {
+                                                      it.qty = qty;
+                                                    });
+                                                  },
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                  textAlign: TextAlign.center,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                        border:
+                                                            InputBorder.none,
+                                                        isDense: true,
+                                                      ),
+                                                ),
+                                              ),
+                                              IconButton(
+                                                onPressed: () =>
+                                                    _setQty(it, it.qty + 1),
+                                                icon: const Icon(
+                                                  Icons.add,
+                                                  size: 18,
+                                                ),
+                                                padding: EdgeInsets.zero,
+                                                constraints:
+                                                    const BoxConstraints.tightFor(
+                                                      width: 32,
+                                                      height: 32,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          width: 110,
+                                          height: 50,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: kLightBlue,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const Text(
+                                                'Total',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: Color(0xFF64748B),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                '₹${it.total.toStringAsFixed(2)}',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: kPrimaryBlue,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SizedBox(
+                                          width: 40,
+                                          height: 40,
+                                          child: IconButton(
+                                            onPressed: () => _deleteItem(index),
+                                            padding: EdgeInsets.zero,
+                                            icon: const Icon(
+                                              Icons.delete_outline,
+                                              color: Colors.redAccent,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SizedBox(
+                                          width: 70,
+                                          height: 40,
+                                          child: Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              'Stock: ${it.product.currentStock}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFF64748B),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    Card(
+                      color: kLightBlue,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Grand Total',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF475467),
+                                  ),
+                                ),
+                                Text(
+                                  '₹${_grandTotal.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: kPrimaryBlue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: FilledButton(
+                                onPressed: _savePurchase,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: kPrimaryBlue,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Save Purchase',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      }),
+          );
+        },
+      ),
     );
   }
 }
@@ -880,18 +1197,9 @@ class ShopEstimatorApp extends StatelessWidget {
             fontWeight: FontWeight.w700,
             color: kPrimaryBlue,
           ),
-          titleMedium: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-          bodyLarge: TextStyle(
-            fontSize: 15,
-            color: Color(0xFF475467),
-          ),
-          bodyMedium: TextStyle(
-            fontSize: 14,
-            color: Color(0xFF64748B),
-          ),
+          titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          bodyLarge: TextStyle(fontSize: 15, color: Color(0xFF475467)),
+          bodyMedium: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
         ),
       ),
       home: const DashboardPage(),
@@ -907,11 +1215,36 @@ class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
   static final List<_SummaryItem> _summaryItems = [
-    _SummaryItem(label: "Today's Sales", value: '₹42,800', icon: Icons.point_of_sale, color: kLightBlue),
-    _SummaryItem(label: "Today's Purchase", value: '₹18,400', icon: Icons.shopping_cart_checkout, color: kGreen),
-    _SummaryItem(label: 'Stock Value', value: '₹312,700', icon: Icons.inventory_2, color: kOrange),
-    _SummaryItem(label: 'Receivable', value: '₹72,300', icon: Icons.account_balance_wallet, color: kPurple),
-    _SummaryItem(label: 'Payable', value: '₹24,100', icon: Icons.payments, color: kRedLight),
+    _SummaryItem(
+      label: "Today's Sales",
+      value: '₹42,800',
+      icon: Icons.point_of_sale,
+      color: kLightBlue,
+    ),
+    _SummaryItem(
+      label: "Today's Purchase",
+      value: '₹18,400',
+      icon: Icons.shopping_cart_checkout,
+      color: kGreen,
+    ),
+    _SummaryItem(
+      label: 'Stock Value',
+      value: '₹312,700',
+      icon: Icons.inventory_2,
+      color: kOrange,
+    ),
+    _SummaryItem(
+      label: 'Receivable',
+      value: '₹72,300',
+      icon: Icons.account_balance_wallet,
+      color: kPurple,
+    ),
+    _SummaryItem(
+      label: 'Payable',
+      value: '₹24,100',
+      icon: Icons.payments,
+      color: kRedLight,
+    ),
   ];
 
   static const List<_MenuItem> _menuItems = [
@@ -934,9 +1267,19 @@ class DashboardPage extends StatelessWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
-            Text('SHOP ESTIMATOR', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
+            Text(
+              'SHOP ESTIMATOR',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
             SizedBox(height: 4),
-            Text('Smart Inventory & Billing', style: TextStyle(fontSize: 13, color: Color(0xFFBBDEFB))),
+            Text(
+              'Smart Inventory & Billing',
+              style: TextStyle(fontSize: 13, color: Color(0xFFBBDEFB)),
+            ),
           ],
         ),
         actions: [
@@ -954,17 +1297,41 @@ class DashboardPage extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final width = constraints.maxWidth;
-            final summaryColumns = width >= 1400 ? 5 : width >= 1200 ? 4 : width >= 1000 ? 3 : width >= 700 ? 2 : 1;
-            final menuColumns = width >= 1200 ? 4 : width >= 900 ? 3 : width >= 600 ? 2 : 1;
+            final summaryColumns = width >= 1400
+                ? 5
+                : width >= 1200
+                ? 4
+                : width >= 1000
+                ? 3
+                : width >= 700
+                ? 2
+                : 1;
+            final menuColumns = width >= 1200
+                ? 4
+                : width >= 900
+                ? 3
+                : width >= 600
+                ? 2
+                : 1;
 
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Dashboard Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
+                  const Text(
+                    'Dashboard Overview',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: kPrimaryBlue,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  const Text('A clear overview of sales, inventory, receivables and payable positions.', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
+                  const Text(
+                    'A clear overview of sales, inventory, receivables and payable positions.',
+                    style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+                  ),
                   const SizedBox(height: 12),
                   GridView.builder(
                     shrinkWrap: true,
@@ -981,7 +1348,14 @@ class DashboardPage extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: 12),
-                  const Text('Quick Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
+                  const Text(
+                    'Quick Actions',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: kPrimaryBlue,
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   GridView.builder(
                     shrinkWrap: true,
@@ -1014,7 +1388,12 @@ class _SummaryItem {
   final IconData icon;
   final Color color;
 
-  const _SummaryItem({required this.label, required this.value, required this.icon, required this.color});
+  const _SummaryItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
 }
 
 class _MenuItem {
@@ -1061,7 +1440,14 @@ class _SummaryCard extends StatelessWidget {
                   Expanded(
                     child: Align(
                       alignment: Alignment.centerRight,
-                      child: Text(item.value, style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.w900, color: kPrimaryBlue)),
+                      child: Text(
+                        item.value,
+                        style: TextStyle(
+                          fontSize: 15.0,
+                          fontWeight: FontWeight.w900,
+                          color: kPrimaryBlue,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -1069,7 +1455,14 @@ class _SummaryCard extends StatelessWidget {
               const SizedBox(height: 4),
               Flexible(
                 fit: FlexFit.loose,
-                child: Text(item.label, style: TextStyle(fontSize: 11.0, fontWeight: FontWeight.w700, color: const Color(0xFF263238))),
+                child: Text(
+                  item.label,
+                  style: TextStyle(
+                    fontSize: 11.0,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF263238),
+                  ),
+                ),
               ),
             ],
           ),
@@ -1104,8 +1497,10 @@ class _MenuCard extends StatelessWidget {
                 if (item.label == 'Parties') return const PartiesPage();
                 if (item.label == 'Sales') return const SalesDashboardPage();
                 if (item.label == 'Purchase') return const PurchasePage();
-                if (item.label == 'Sales Return') return const SalesReturnPage();
-                if (item.label == 'Product Master') return const ProductMasterPage();
+                if (item.label == 'Sales Return')
+                  return const SalesReturnPage();
+                if (item.label == 'Product Master')
+                  return const ProductMasterPage();
                 if (item.label == 'Inventory') return const InventoryPage();
                 return SectionPage(title: item.label);
               },
@@ -1114,36 +1509,55 @@ class _MenuCard extends StatelessWidget {
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: LayoutBuilder(builder: (context, constraints) {
-            final iconSize = 18.0;
-            final titleSize = 13.0;
-            final subtitleSize = 11.0;
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      height: 32,
-                      width: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final iconSize = 18.0;
+              final titleSize = 13.0;
+              final subtitleSize = 11.0;
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        height: 32,
+                        width: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          item.icon,
+                          color: kPrimaryBlue,
+                          size: iconSize,
+                        ),
                       ),
-                      child: Icon(item.icon, color: kPrimaryBlue, size: iconSize),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          item.label,
+                          style: TextStyle(
+                            fontSize: titleSize,
+                            fontWeight: FontWeight.w700,
+                            color: kPrimaryBlue,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Tap to manage',
+                    style: TextStyle(
+                      fontSize: subtitleSize,
+                      color: const Color(0xFF64748B),
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(item.label, style: TextStyle(fontSize: titleSize, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text('Tap to manage', style: TextStyle(fontSize: subtitleSize, color: const Color(0xFF64748B))),
-              ],
-            );
-          }),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -1183,7 +1597,8 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
       _companyNameController.text = prefs.getString('company_name') ?? '';
       _ownerNameController.text = prefs.getString('owner_name') ?? '';
       _mobileController.text = prefs.getString('mobile_number') ?? '';
-      _alternateMobileController.text = prefs.getString('alternate_mobile') ?? '';
+      _alternateMobileController.text =
+          prefs.getString('alternate_mobile') ?? '';
       _addressController.text = prefs.getString('address') ?? '';
       _gstAvailable = prefs.getString('gst_available') ?? 'No';
       _gstinController.text = prefs.getString('gstin') ?? '';
@@ -1199,7 +1614,10 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
     await prefs.setString('company_name', _companyNameController.text.trim());
     await prefs.setString('owner_name', _ownerNameController.text.trim());
     await prefs.setString('mobile_number', _mobileController.text.trim());
-    await prefs.setString('alternate_mobile', _alternateMobileController.text.trim());
+    await prefs.setString(
+      'alternate_mobile',
+      _alternateMobileController.text.trim(),
+    );
     await prefs.setString('address', _addressController.text.trim());
     await prefs.setString('gst_available', _gstAvailable);
     await prefs.setString('gstin', _gstinController.text.trim());
@@ -1253,7 +1671,10 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
           hintText: hint,
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide(color: Colors.grey.shade300),
@@ -1266,10 +1687,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Company Profile'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Company Profile'), elevation: 0),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: kPrimaryBlue))
           : LayoutBuilder(
@@ -1284,15 +1702,30 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                       child: Card(
                         color: kCardBlue,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(14),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Company Details', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+                              const Text(
+                                'Company Details',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                  color: kPrimaryBlue,
+                                ),
+                              ),
                               const SizedBox(height: 8),
-                              const Text('Update company profile and contact details for your estimation workflow.', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
+                              const Text(
+                                'Update company profile and contact details for your estimation workflow.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
                               const SizedBox(height: 12),
                               Form(
                                 key: _formKey,
@@ -1301,7 +1734,10 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                                     _buildTextField(
                                       label: 'Company Name *',
                                       controller: _companyNameController,
-                                      validator: (value) => value == null || value.trim().isEmpty ? 'Company name is required' : null,
+                                      validator: (value) =>
+                                          value == null || value.trim().isEmpty
+                                          ? 'Company name is required'
+                                          : null,
                                     ),
                                     _buildTextField(
                                       label: 'Owner Name',
@@ -1311,7 +1747,10 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                                       label: 'Mobile Number *',
                                       controller: _mobileController,
                                       keyboardType: TextInputType.phone,
-                                      validator: (value) => value == null || value.trim().isEmpty ? 'Mobile number is required' : null,
+                                      validator: (value) =>
+                                          value == null || value.trim().isEmpty
+                                          ? 'Mobile number is required'
+                                          : null,
                                     ),
                                     _buildTextField(
                                       label: 'Alternate Mobile',
@@ -1324,22 +1763,38 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                                       maxLines: 3,
                                     ),
                                     Padding(
-                                      padding: const EdgeInsets.only(bottom: 10),
+                                      padding: const EdgeInsets.only(
+                                        bottom: 10,
+                                      ),
                                       child: DropdownButtonFormField<String>(
                                         initialValue: _gstAvailable,
                                         decoration: InputDecoration(
                                           labelText: 'GSTIN Available?',
                                           filled: true,
                                           fillColor: Colors.white,
-                                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 10,
+                                              ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(14),
-                                            borderSide: BorderSide(color: Colors.grey.shade300),
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.grey.shade300,
+                                            ),
                                           ),
                                         ),
                                         items: const [
-                                          DropdownMenuItem(value: 'Yes', child: Text('Yes')),
-                                          DropdownMenuItem(value: 'No', child: Text('No')),
+                                          DropdownMenuItem(
+                                            value: 'Yes',
+                                            child: Text('Yes'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'No',
+                                            child: Text('No'),
+                                          ),
                                         ],
                                         onChanged: (value) {
                                           setState(() {
@@ -1353,7 +1808,9 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                                         label: 'GSTIN',
                                         controller: _gstinController,
                                         validator: (value) {
-                                          if (_gstAvailable == 'Yes' && (value == null || value.trim().isEmpty)) {
+                                          if (_gstAvailable == 'Yes' &&
+                                              (value == null ||
+                                                  value.trim().isEmpty)) {
                                             return 'GSTIN is required when available';
                                           }
                                           return null;
@@ -1391,10 +1848,22 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                                             onPressed: _saveCompanyDetails,
                                             style: FilledButton.styleFrom(
                                               backgroundColor: kPrimaryBlue,
-                                              padding: const EdgeInsets.symmetric(vertical: 12),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                              ),
                                             ),
-                                            child: const Text('Save', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                                            child: const Text(
+                                              'Save',
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(width: 10),
@@ -1403,11 +1872,25 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                                             onPressed: _saveCompanyDetails,
                                             style: OutlinedButton.styleFrom(
                                               foregroundColor: kPrimaryBlue,
-                                              side: const BorderSide(color: kPrimaryBlue),
-                                              padding: const EdgeInsets.symmetric(vertical: 12),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                              side: const BorderSide(
+                                                color: kPrimaryBlue,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                              ),
                                             ),
-                                            child: const Text('Update', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                                            child: const Text(
+                                              'Update',
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -1513,7 +1996,10 @@ class _PartiesPageState extends State<PartiesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Parties', style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text(
+          'Parties',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -1522,180 +2008,297 @@ class _PartiesPageState extends State<PartiesPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            const Text('Parties', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
-            const SizedBox(height: 6),
-            const Text('Customer and Supplier master', style: TextStyle(fontSize: 15, color: Color(0xFF64748B))),
-            const SizedBox(height: 16),
-            Card(
-              color: kCardBlue,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _textField(label: 'Party Name', width: 320, controller: _partyNameController),
-                        const SizedBox(width: 12),
-                        _dropdownField(
-                          label: 'Party Type',
-                          width: 180,
-                          value: _partyType,
-                          options: const ['Customer', 'Supplier', 'Both'],
-                          onChanged: (value) => setState(() => _partyType = value),
-                        ),
-                        const SizedBox(width: 12),
-                        _textField(label: 'Mobile Number', width: 220, controller: _mobileNumberController),
-                        const SizedBox(width: 12),
-                        _textField(label: 'Alternate Mobile', width: 220, controller: _alternateMobileController),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _textField(label: 'Address', width: 520, controller: _addressController),
-                        const SizedBox(width: 12),
-                        _dropdownField(
-                          label: 'Category',
-                          width: 260,
-                          value: _category,
-                          options: _categoryOptions,
-                          onChanged: (value) => setState(() => _category = value),
-                        ),
-                        const SizedBox(width: 12),
-                        _dropdownField(
-                          label: 'GSTIN Available',
-                          width: 160,
-                          value: _gstinAvailable,
-                          options: const ['Yes', 'No'],
-                          onChanged: (value) => setState(() => _gstinAvailable = value),
-                        ),
-                        const SizedBox(width: 12),
-                        _textField(label: 'GSTIN', width: 260, controller: _gstinController),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Balance / Due Details',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kPrimaryBlue),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _textField(label: 'Opening Balance', width: 220, controller: _openingBalanceController),
-                        const SizedBox(width: 12),
-                        _dropdownField(
-                          label: 'Balance Type',
-                          width: 200,
-                          value: _balanceType,
-                          options: const ['Receivable', 'Payable', 'Zero'],
-                          onChanged: (value) => setState(() => _balanceType = value),
-                        ),
-                        const SizedBox(width: 12),
-                        _dropdownField(
-                          label: 'Payment Terms',
-                          width: 180,
-                          value: _paymentTerms,
-                          options: const ['Cash', '7 Days', '15 Days', '30 Days'],
-                          onChanged: (value) => setState(() => _paymentTerms = value),
-                        ),
-                        const SizedBox(width: 12),
-                        _textField(label: 'Due Date', width: 180, controller: _dueDateController),
-                        const SizedBox(width: 12),
-                        _textField(label: 'Alert Before Days', width: 180, controller: _alertBeforeDaysController),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Supplier Payment Details',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kPrimaryBlue),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _textField(label: 'Bank Name', width: 260, controller: _bankNameController),
-                        const SizedBox(width: 12),
-                        _textField(label: 'Account Holder Name', width: 300, controller: _accountHolderNameController),
-                        const SizedBox(width: 12),
-                        _textField(label: 'Account Number', width: 260, controller: _accountNumberController),
-                        const SizedBox(width: 12),
-                        _textField(label: 'IFSC Code', width: 180, controller: _ifscCodeController),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _textField(label: 'UPI ID', width: 260, controller: _upiIdController),
-                        const SizedBox(width: 12),
-                        _textField(label: 'UPI Mobile Number', width: 220, controller: _upiMobileNumberController),
-                        const SizedBox(width: 12),
-                        _uploadPlaceholder(label: _qrScannerUploadData.isEmpty ? 'QR Scanner Upload' : 'QR Uploaded', width: 180),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        _actionButton(label: 'Save Party', width: 150, onPressed: _saveParty),
-                        const SizedBox(width: 10),
-                        _actionButton(label: 'Update Party', width: 150, onPressed: _updateParty),
-                        const SizedBox(width: 10),
-                        _actionButton(label: 'Clear', width: 120, onPressed: _clearPartySelection),
-                      ],
-                    ),
-                    if (_partyMessage.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Center(
-                        child: Text(
-                          _partyMessage,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: kPrimaryBlue),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Saved Parties',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kPrimaryBlue),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: kPrimaryBlue,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          _savedPartyHeaderCell('Party Name', width: 220),
-                          _savedPartyHeaderCell('Type', width: 110),
-                          _savedPartyHeaderCell('Category', width: 180),
-                          _savedPartyHeaderCell('Mobile', width: 150),
-                          _savedPartyHeaderCell('Balance', width: 130),
-                          _savedPartyHeaderCell('Due Status', width: 140),
-                          _savedPartyHeaderCell('Pay Now', width: 76),
-                          _savedPartyHeaderCell('Edit', width: 58),
-                          _savedPartyHeaderCell('Delete', width: 68),
-                        ],
-                      ),
-                    ),
-                    if (_savedParties.isEmpty)
-                      const SizedBox(
-                        height: 52,
-                        child: Center(
-                          child: Text('No parties saved yet', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
-                        ),
-                      )
-                    else
-                      ..._savedParties.asMap().entries.map((entry) => _savedPartyRow(entry.key, entry.value)),
-                  ],
+              const Text(
+                'Parties',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: kPrimaryBlue,
                 ),
               ),
-            ),
+              const SizedBox(height: 6),
+              const Text(
+                'Customer and Supplier master',
+                style: TextStyle(fontSize: 15, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 16),
+              Card(
+                color: kCardBlue,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _textField(
+                            label: 'Party Name',
+                            width: 320,
+                            controller: _partyNameController,
+                          ),
+                          const SizedBox(width: 12),
+                          _dropdownField(
+                            label: 'Party Type',
+                            width: 180,
+                            value: _partyType,
+                            options: const ['Customer', 'Supplier', 'Both'],
+                            onChanged: (value) =>
+                                setState(() => _partyType = value),
+                          ),
+                          const SizedBox(width: 12),
+                          _textField(
+                            label: 'Mobile Number',
+                            width: 220,
+                            controller: _mobileNumberController,
+                          ),
+                          const SizedBox(width: 12),
+                          _textField(
+                            label: 'Alternate Mobile',
+                            width: 220,
+                            controller: _alternateMobileController,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _textField(
+                            label: 'Address',
+                            width: 520,
+                            controller: _addressController,
+                          ),
+                          const SizedBox(width: 12),
+                          _dropdownField(
+                            label: 'Category',
+                            width: 260,
+                            value: _category,
+                            options: _categoryOptions,
+                            onChanged: (value) =>
+                                setState(() => _category = value),
+                          ),
+                          const SizedBox(width: 12),
+                          _dropdownField(
+                            label: 'GSTIN Available',
+                            width: 160,
+                            value: _gstinAvailable,
+                            options: const ['Yes', 'No'],
+                            onChanged: (value) =>
+                                setState(() => _gstinAvailable = value),
+                          ),
+                          const SizedBox(width: 12),
+                          _textField(
+                            label: 'GSTIN',
+                            width: 260,
+                            controller: _gstinController,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Balance / Due Details',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: kPrimaryBlue,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _textField(
+                            label: 'Opening Balance',
+                            width: 220,
+                            controller: _openingBalanceController,
+                          ),
+                          const SizedBox(width: 12),
+                          _dropdownField(
+                            label: 'Balance Type',
+                            width: 200,
+                            value: _balanceType,
+                            options: const ['Receivable', 'Payable', 'Zero'],
+                            onChanged: (value) =>
+                                setState(() => _balanceType = value),
+                          ),
+                          const SizedBox(width: 12),
+                          _dropdownField(
+                            label: 'Payment Terms',
+                            width: 180,
+                            value: _paymentTerms,
+                            options: const [
+                              'Cash',
+                              '7 Days',
+                              '15 Days',
+                              '30 Days',
+                            ],
+                            onChanged: (value) =>
+                                setState(() => _paymentTerms = value),
+                          ),
+                          const SizedBox(width: 12),
+                          _textField(
+                            label: 'Due Date',
+                            width: 180,
+                            controller: _dueDateController,
+                          ),
+                          const SizedBox(width: 12),
+                          _textField(
+                            label: 'Alert Before Days',
+                            width: 180,
+                            controller: _alertBeforeDaysController,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Supplier Payment Details',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: kPrimaryBlue,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _textField(
+                            label: 'Bank Name',
+                            width: 260,
+                            controller: _bankNameController,
+                          ),
+                          const SizedBox(width: 12),
+                          _textField(
+                            label: 'Account Holder Name',
+                            width: 300,
+                            controller: _accountHolderNameController,
+                          ),
+                          const SizedBox(width: 12),
+                          _textField(
+                            label: 'Account Number',
+                            width: 260,
+                            controller: _accountNumberController,
+                          ),
+                          const SizedBox(width: 12),
+                          _textField(
+                            label: 'IFSC Code',
+                            width: 180,
+                            controller: _ifscCodeController,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _textField(
+                            label: 'UPI ID',
+                            width: 260,
+                            controller: _upiIdController,
+                          ),
+                          const SizedBox(width: 12),
+                          _textField(
+                            label: 'UPI Mobile Number',
+                            width: 220,
+                            controller: _upiMobileNumberController,
+                          ),
+                          const SizedBox(width: 12),
+                          _uploadPlaceholder(
+                            label: _qrScannerUploadData.isEmpty
+                                ? 'QR Scanner Upload'
+                                : 'QR Uploaded',
+                            width: 180,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          _actionButton(
+                            label: 'Save Party',
+                            width: 150,
+                            onPressed: _saveParty,
+                          ),
+                          const SizedBox(width: 10),
+                          _actionButton(
+                            label: 'Update Party',
+                            width: 150,
+                            onPressed: _updateParty,
+                          ),
+                          const SizedBox(width: 10),
+                          _actionButton(
+                            label: 'Clear',
+                            width: 120,
+                            onPressed: _clearPartySelection,
+                          ),
+                        ],
+                      ),
+                      if (_partyMessage.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Text(
+                            _partyMessage,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: kPrimaryBlue,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Saved Parties',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: kPrimaryBlue,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: kPrimaryBlue,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            _savedPartyHeaderCell('Party Name', width: 220),
+                            _savedPartyHeaderCell('Type', width: 110),
+                            _savedPartyHeaderCell('Category', width: 180),
+                            _savedPartyHeaderCell('Mobile', width: 150),
+                            _savedPartyHeaderCell('Balance', width: 130),
+                            _savedPartyHeaderCell('Due Status', width: 140),
+                            _savedPartyHeaderCell('Pay Now', width: 76),
+                            _savedPartyHeaderCell('Edit', width: 58),
+                            _savedPartyHeaderCell('Delete', width: 68),
+                          ],
+                        ),
+                      ),
+                      if (_savedParties.isEmpty)
+                        const SizedBox(
+                          height: 52,
+                          child: Center(
+                            child: Text(
+                              'No parties saved yet',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        ..._savedParties.asMap().entries.map(
+                          (entry) => _savedPartyRow(entry.key, entry.value),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -1743,7 +2346,10 @@ class _PartiesPageState extends State<PartiesPage> {
 
   void _updateParty() {
     final selectedIndex = _selectedPartyIndex;
-    if (selectedIndex == null || selectedIndex < 0 || selectedIndex >= _savedParties.length) return;
+    if (selectedIndex == null ||
+        selectedIndex < 0 ||
+        selectedIndex >= _savedParties.length)
+      return;
 
     setState(() {
       _savedParties[selectedIndex] = _currentPartyData();
@@ -1785,7 +2391,11 @@ class _PartiesPageState extends State<PartiesPage> {
 
     final parties = decodedParties
         .whereType<Map>()
-        .map((party) => party.map((key, value) => MapEntry(key.toString(), value?.toString() ?? '')))
+        .map(
+          (party) => party.map(
+            (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+          ),
+        )
         .toList();
 
     if (!mounted) return;
@@ -1879,168 +2489,234 @@ class _PartiesPageState extends State<PartiesPage> {
         final maxDialogHeight = screenHeight * 0.85;
 
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: 520, maxHeight: maxDialogHeight),
+            constraints: BoxConstraints(
+              maxWidth: 520,
+              maxHeight: maxDialogHeight,
+            ),
             child: StatefulBuilder(
               builder: (context, setDialogState) {
                 return SingleChildScrollView(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Pay Now', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
-                      const SizedBox(height: 4),
-                      Text(
-                        _payNowValue(party['partyName']),
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF475467)),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Party Details',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: kPrimaryBlue),
-                      ),
-                      const SizedBox(height: 10),
-                      _payNowDetails(party),
-                      const SizedBox(height: 18),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final fieldWidth = constraints.maxWidth >= 470 ? (constraints.maxWidth - 10) / 2 : constraints.maxWidth;
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  _payNowDropdown(
-                                    label: 'Payment Method',
-                                    width: fieldWidth,
-                                    value: paymentMethod,
-                                    options: const ['QR Payment', 'UPI App', 'Mobile Banking', 'Net Banking'],
-                                    onChanged: (value) => setDialogState(() => paymentMethod = value),
-                                  ),
-                                  _payNowDropdown(
-                                    label: 'My Bank',
-                                    width: fieldWidth,
-                                    value: myBank,
-                                    options: const [
-                                      'SBI',
-                                      'HDFC Bank',
-                                      'ICICI Bank',
-                                      'Axis Bank',
-                                      'Kotak Mahindra Bank',
-                                      'Canara Bank',
-                                      'Bank of Baroda',
-                                      'Punjab National Bank',
-                                      'PNB',
-                                      'Union Bank of India',
-                                      'Indian Bank',
-                                      'Bank of India',
-                                      'Central Bank of India',
-                                      'Indian Overseas Bank',
-                                      'Yes Bank',
-                                      'IDFC FIRST Bank',
-                                      'IndusInd Bank',
-                                      'Federal Bank',
-                                      'South Indian Bank',
-                                      'Karnataka Bank',
-                                      'Karur Vysya Bank',
-                                      'City Union Bank',
-                                      'AU Small Finance Bank',
-                                      'Bandhan Bank',
-                                      'RBL Bank',
-                                      'DBS Bank',
-                                      'Other',
-                                    ],
-                                    onChanged: (value) => setDialogState(() => myBank = value),
-                                  ),
-                                ],
-                              ),
-                              if (myBank == 'Other') ...[
-                                const SizedBox(height: 10),
-                                Align(
-                                  alignment: constraints.maxWidth >= 470 ? Alignment.centerRight : Alignment.centerLeft,
-                                  child: SizedBox(
-                                    width: fieldWidth,
-                                    height: 52,
-                                    child: TextFormField(
-                                      initialValue: otherBankName,
-                                      onChanged: (value) => otherBankName = value,
-                                      decoration: InputDecoration(
-                                        labelText: 'Enter Bank Name',
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Pay Now',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: kPrimaryBlue,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _payNowValue(party['partyName']),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF475467),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Party Details',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: kPrimaryBlue,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _payNowDetails(party),
+                        const SizedBox(height: 18),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final fieldWidth = constraints.maxWidth >= 470
+                                ? (constraints.maxWidth - 10) / 2
+                                : constraints.maxWidth;
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: [
+                                    _payNowDropdown(
+                                      label: 'Payment Method',
+                                      width: fieldWidth,
+                                      value: paymentMethod,
+                                      options: const [
+                                        'QR Payment',
+                                        'UPI App',
+                                        'Mobile Banking',
+                                        'Net Banking',
+                                      ],
+                                      onChanged: (value) => setDialogState(
+                                        () => paymentMethod = value,
+                                      ),
+                                    ),
+                                    _payNowDropdown(
+                                      label: 'My Bank',
+                                      width: fieldWidth,
+                                      value: myBank,
+                                      options: const [
+                                        'SBI',
+                                        'HDFC Bank',
+                                        'ICICI Bank',
+                                        'Axis Bank',
+                                        'Kotak Mahindra Bank',
+                                        'Canara Bank',
+                                        'Bank of Baroda',
+                                        'Punjab National Bank',
+                                        'PNB',
+                                        'Union Bank of India',
+                                        'Indian Bank',
+                                        'Bank of India',
+                                        'Central Bank of India',
+                                        'Indian Overseas Bank',
+                                        'Yes Bank',
+                                        'IDFC FIRST Bank',
+                                        'IndusInd Bank',
+                                        'Federal Bank',
+                                        'South Indian Bank',
+                                        'Karnataka Bank',
+                                        'Karur Vysya Bank',
+                                        'City Union Bank',
+                                        'AU Small Finance Bank',
+                                        'Bandhan Bank',
+                                        'RBL Bank',
+                                        'DBS Bank',
+                                        'Other',
+                                      ],
+                                      onChanged: (value) =>
+                                          setDialogState(() => myBank = value),
+                                    ),
+                                  ],
+                                ),
+                                if (myBank == 'Other') ...[
+                                  const SizedBox(height: 10),
+                                  Align(
+                                    alignment: constraints.maxWidth >= 470
+                                        ? Alignment.centerRight
+                                        : Alignment.centerLeft,
+                                    child: SizedBox(
+                                      width: fieldWidth,
+                                      height: 52,
+                                      child: TextFormField(
+                                        initialValue: otherBankName,
+                                        onChanged: (value) =>
+                                            otherBankName = value,
+                                        decoration: InputDecoration(
+                                          labelText: 'Enter Bank Name',
+                                          filled: true,
+                                          fillColor: Colors.white,
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 12,
+                                              ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ],
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 18),
-                      if (payNowMessage.isNotEmpty) ...[
-                        Center(
-                          child: Text(
-                            payNowMessage,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFFDC2626)),
-                          ),
+                            );
+                          },
                         ),
-                        const SizedBox(height: 12),
-                      ],
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          SizedBox(
-                            height: 48,
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.of(dialogContext).pop(),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: kPrimaryBlue,
-                                side: const BorderSide(color: kPrimaryBlue),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        const SizedBox(height: 18),
+                        if (payNowMessage.isNotEmpty) ...[
+                          Center(
+                            child: Text(
+                              payNowMessage,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFDC2626),
                               ),
-                              child: const Text('Close'),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          SizedBox(
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: () => _continuePayNow(
-                                party: party,
-                                paymentMethod: paymentMethod,
-                                myBank: myBank,
-                                otherBankName: otherBankName,
-                                showMessage: (message) {
-                                  final token = ++payNowMessageToken;
-                                  setDialogState(() => payNowMessage = message);
-                                  Future.delayed(const Duration(seconds: 2), () {
-                                    if (!mounted || !isPayNowDialogOpen || token != payNowMessageToken) return;
-                                    setDialogState(() => payNowMessage = '');
-                                  });
-                                },
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: kPrimaryBlue,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-                              ),
-                              child: const Text('Continue / Open Payment'),
-                            ),
-                          ),
+                          const SizedBox(height: 12),
                         ],
-                      ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            SizedBox(
+                              height: 48,
+                              child: OutlinedButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: kPrimaryBlue,
+                                  side: const BorderSide(color: kPrimaryBlue),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text('Close'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            SizedBox(
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed: () => _continuePayNow(
+                                  party: party,
+                                  paymentMethod: paymentMethod,
+                                  myBank: myBank,
+                                  otherBankName: otherBankName,
+                                  showMessage: (message) {
+                                    final token = ++payNowMessageToken;
+                                    setDialogState(
+                                      () => payNowMessage = message,
+                                    );
+                                    Future.delayed(
+                                      const Duration(seconds: 2),
+                                      () {
+                                        if (!mounted ||
+                                            !isPayNowDialogOpen ||
+                                            token != payNowMessageToken)
+                                          return;
+                                        setDialogState(
+                                          () => payNowMessage = '',
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: kPrimaryBlue,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                child: const Text('Continue / Open Payment'),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -2123,25 +2799,47 @@ class _PartiesPageState extends State<PartiesPage> {
       {'label': 'Balance', 'value': _payNowValue(party['openingBalance'])},
       {'label': 'Due Status', 'value': _payNowValue(party['balanceType'])},
       {'label': 'Bank Name', 'value': _payNowValue(party['bankName'])},
-      {'label': 'Account Holder Name', 'value': _payNowValue(party['accountHolderName'])},
-      {'label': 'Account Number', 'value': _payNowValue(party['accountNumber'])},
+      {
+        'label': 'Account Holder Name',
+        'value': _payNowValue(party['accountHolderName']),
+      },
+      {
+        'label': 'Account Number',
+        'value': _payNowValue(party['accountNumber']),
+      },
       {'label': 'IFSC Code', 'value': _payNowValue(party['ifscCode'])},
       {'label': 'UPI ID', 'value': _payNowValue(party['upiId'])},
-      {'label': 'UPI Mobile Number', 'value': _payNowValue(party['upiMobileNumber'])},
+      {
+        'label': 'UPI Mobile Number',
+        'value': _payNowValue(party['upiMobileNumber']),
+      },
     ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final tileWidth = constraints.maxWidth >= 470 ? (constraints.maxWidth - 10) / 2 : constraints.maxWidth;
+        final tileWidth = constraints.maxWidth >= 470
+            ? (constraints.maxWidth - 10) / 2
+            : constraints.maxWidth;
 
         return Wrap(
           spacing: 10,
           runSpacing: 10,
           children: [
-            _payNowDetailTile(label: 'Party Name', value: _payNowValue(party['partyName']), width: constraints.maxWidth),
+            _payNowDetailTile(
+              label: 'Party Name',
+              value: _payNowValue(party['partyName']),
+              width: constraints.maxWidth,
+            ),
             for (final detail in details)
-              _payNowDetailTile(label: detail['label'] ?? '', value: detail['value'] ?? '-', width: tileWidth),
-            _payNowQrTile(qrImageData: party['qrScannerUpload'] ?? '', width: constraints.maxWidth),
+              _payNowDetailTile(
+                label: detail['label'] ?? '',
+                value: detail['value'] ?? '-',
+                width: tileWidth,
+              ),
+            _payNowQrTile(
+              qrImageData: party['qrScannerUpload'] ?? '',
+              width: constraints.maxWidth,
+            ),
           ],
         );
       },
@@ -2164,16 +2862,31 @@ class _PartiesPageState extends State<PartiesPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('QR Scanner', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+              const Text(
+                'QR Scanner',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF64748B),
+                ),
+              ),
               const SizedBox(height: 8),
               if (trimmedQrImageData.isEmpty)
                 const Text(
                   'QR not uploaded',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
+                  ),
                 )
               else
                 Center(
-                  child: _payNowQrCard(qrImageData: trimmedQrImageData, size: 300, onTap: () => _showPayNowQrPreview(trimmedQrImageData)),
+                  child: _payNowQrCard(
+                    qrImageData: trimmedQrImageData,
+                    size: 300,
+                    onTap: () => _showPayNowQrPreview(trimmedQrImageData),
+                  ),
                 ),
             ],
           ),
@@ -2182,8 +2895,14 @@ class _PartiesPageState extends State<PartiesPage> {
     );
   }
 
-  Widget _payNowQrCard({required String qrImageData, required double size, VoidCallback? onTap}) {
-    final qrBytes = base64Decode(qrImageData.contains(',') ? qrImageData.split(',').last : qrImageData);
+  Widget _payNowQrCard({
+    required String qrImageData,
+    required double size,
+    VoidCallback? onTap,
+  }) {
+    final qrBytes = base64Decode(
+      qrImageData.contains(',') ? qrImageData.split(',').last : qrImageData,
+    );
 
     final card = DecoratedBox(
       decoration: BoxDecoration(
@@ -2196,7 +2915,14 @@ class _PartiesPageState extends State<PartiesPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Scan QR', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+            const Text(
+              'Scan QR',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: kPrimaryBlue,
+              ),
+            ),
             const SizedBox(height: 8),
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
@@ -2212,7 +2938,11 @@ class _PartiesPageState extends State<PartiesPage> {
                     child: Center(
                       child: Text(
                         'QR not uploaded',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1E293B),
+                        ),
                       ),
                     ),
                   );
@@ -2238,8 +2968,13 @@ class _PartiesPageState extends State<PartiesPage> {
       context: context,
       builder: (dialogContext) {
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -2254,7 +2989,9 @@ class _PartiesPageState extends State<PartiesPage> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: kPrimaryBlue,
                       side: const BorderSide(color: kPrimaryBlue),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     child: const Text('Close'),
                   ),
@@ -2267,7 +3004,11 @@ class _PartiesPageState extends State<PartiesPage> {
     );
   }
 
-  Widget _payNowDetailTile({required String label, required String value, required double width}) {
+  Widget _payNowDetailTile({
+    required String label,
+    required String value,
+    required double width,
+  }) {
     return SizedBox(
       width: width,
       child: DecoratedBox(
@@ -2281,12 +3022,23 @@ class _PartiesPageState extends State<PartiesPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF64748B),
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 value,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
               ),
             ],
           ),
@@ -2313,10 +3065,17 @@ class _PartiesPageState extends State<PartiesPage> {
           labelText: label,
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 12,
+          ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         ),
-        items: options.map((option) => DropdownMenuItem(value: option, child: Text(option))).toList(),
+        items: options
+            .map(
+              (option) => DropdownMenuItem(value: option, child: Text(option)),
+            )
+            .toList(),
         onChanged: (value) {
           if (value == null) return;
           onChanged(value);
@@ -2330,7 +3089,11 @@ class _PartiesPageState extends State<PartiesPage> {
     return trimmedValue.isEmpty ? '-' : trimmedValue;
   }
 
-  Widget _actionButton({required String label, required double width, VoidCallback? onPressed}) {
+  Widget _actionButton({
+    required String label,
+    required double width,
+    VoidCallback? onPressed,
+  }) {
     return SizedBox(
       width: width,
       height: 46,
@@ -2359,9 +3122,24 @@ class _PartiesPageState extends State<PartiesPage> {
           _savedPartyCell(party['mobileNumber'] ?? '', width: 150),
           _savedPartyCell(party['openingBalance'] ?? '', width: 130),
           _savedPartyCell(party['balanceType'] ?? '', width: 140),
-          _savedPartyActionButton(label: 'Pay Now', width: 76, color: const Color(0xFF16A34A), onPressed: () => _showPayNowDialog(party)),
-          _savedPartyActionButton(label: 'Edit', width: 58, color: kPrimaryBlue, onPressed: () => _editParty(index)),
-          _savedPartyActionButton(label: 'Delete', width: 68, color: const Color(0xFFDC2626), onPressed: () => _deleteParty(index)),
+          _savedPartyActionButton(
+            label: 'Pay Now',
+            width: 76,
+            color: const Color(0xFF16A34A),
+            onPressed: () => _showPayNowDialog(party),
+          ),
+          _savedPartyActionButton(
+            label: 'Edit',
+            width: 58,
+            color: kPrimaryBlue,
+            onPressed: () => _editParty(index),
+          ),
+          _savedPartyActionButton(
+            label: 'Delete',
+            width: 68,
+            color: const Color(0xFFDC2626),
+            onPressed: () => _deleteParty(index),
+          ),
         ],
       ),
     );
@@ -2401,8 +3179,13 @@ class _PartiesPageState extends State<PartiesPage> {
               foregroundColor: Colors.white,
               elevation: 0,
               padding: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-              textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             child: Text(label),
           ),
@@ -2418,7 +3201,11 @@ class _PartiesPageState extends State<PartiesPage> {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Text(
           label,
-          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
@@ -2458,7 +3245,11 @@ class _PartiesPageState extends State<PartiesPage> {
     });
   }
 
-  Widget _textField({required String label, required double width, TextEditingController? controller}) {
+  Widget _textField({
+    required String label,
+    required double width,
+    TextEditingController? controller,
+  }) {
     return SizedBox(
       width: width,
       height: 52,
@@ -2468,7 +3259,10 @@ class _PartiesPageState extends State<PartiesPage> {
           labelText: label,
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 12,
+          ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
@@ -2493,10 +3287,17 @@ class _PartiesPageState extends State<PartiesPage> {
           labelText: label,
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 12,
+          ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         ),
-        items: options.map((option) => DropdownMenuItem(value: option, child: Text(option))).toList(),
+        items: options
+            .map(
+              (option) => DropdownMenuItem(value: option, child: Text(option)),
+            )
+            .toList(),
         onChanged: (value) {
           if (value == null) return;
           onChanged(value);
@@ -2524,9 +3325,20 @@ class SectionPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.dashboard_customize, size: 78, color: kPrimaryBlue.withAlpha(230)),
+              Icon(
+                Icons.dashboard_customize,
+                size: 78,
+                color: kPrimaryBlue.withAlpha(230),
+              ),
               const SizedBox(height: 20),
-              Text(title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: kPrimaryBlue,
+                ),
+              ),
               const SizedBox(height: 12),
               const Text(
                 'This section is ready for module content. Build your company workflows, inventory entries, invoices, and reports from here.',
@@ -2562,46 +3374,51 @@ class _InventoryPageState extends State<InventoryPage> {
   }
 
   Future<void> _loadProducts() async {
-  final prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
 
-  final savedProducts = prefs.getStringList('product_master_list') ?? [];
-  final productMap = <String, ProductMaster>{};
+    final savedProducts = prefs.getStringList('product_master_list') ?? [];
+    final productMap = <String, ProductMaster>{};
 
-  for (final entry in savedProducts) {
-    final product =
-        ProductMaster.fromJson(jsonDecode(entry) as Map<String, dynamic>);
-    final key = product.productCode.trim().toLowerCase();
-    if (key.isEmpty) continue;
-    productMap[key] = product;
+    for (final entry in savedProducts) {
+      final product = ProductMaster.fromJson(
+        jsonDecode(entry) as Map<String, dynamic>,
+      );
+      final key = product.productCode.trim().toLowerCase();
+      if (key.isEmpty) continue;
+      productMap[key] = product;
+    }
+
+    final savedLots = prefs.getStringList('purchase_stock_lot_list') ?? [];
+    final lots = savedLots
+        .map(
+          (s) =>
+              PurchaseStockLot.fromJson(jsonDecode(s) as Map<String, dynamic>),
+        )
+        .where((lot) => lot.productCode.trim().isNotEmpty)
+        .toList();
+
+    setState(() {
+      _products
+        ..clear()
+        ..addAll(productMap.values);
+
+      _filteredProducts
+        ..clear()
+        ..addAll(_products);
+
+      _stockLots
+        ..clear()
+        ..addAll(lots);
+
+      _filteredStockLots
+        ..clear()
+        ..addAll(_stockLots);
+    });
+
+    debugPrint('InventoryPage loaded products: ${_products.length}');
+    debugPrint('InventoryPage loaded stock lots: ${_stockLots.length}');
   }
 
-  final savedLots = prefs.getStringList('purchase_stock_lot_list') ?? [];
-  final lots = savedLots
-      .map((s) => PurchaseStockLot.fromJson(jsonDecode(s) as Map<String, dynamic>))
-      .where((lot) => lot.productCode.trim().isNotEmpty)
-      .toList();
-
-  setState(() {
-    _products
-      ..clear()
-      ..addAll(productMap.values);
-
-    _filteredProducts
-      ..clear()
-      ..addAll(_products);
-
-    _stockLots
-      ..clear()
-      ..addAll(lots);
-
-    _filteredStockLots
-      ..clear()
-      ..addAll(_stockLots);
-  });
-
-  debugPrint('InventoryPage loaded products: ${_products.length}');
-  debugPrint('InventoryPage loaded stock lots: ${_stockLots.length}');
-}
   void _updateSearch(String query) {
     final text = query.trim().toLowerCase();
     setState(() {
@@ -2613,12 +3430,16 @@ class _InventoryPageState extends State<InventoryPage> {
       }
       _filteredProducts
         ..clear()
-        ..addAll(_products.where((product) {
-          final code = product.productCode.toLowerCase();
-          final name = product.productName.toLowerCase();
-          final unit = product.unit.toLowerCase();
-          return code.contains(text) || name.contains(text) || unit.contains(text);
-        }));
+        ..addAll(
+          _products.where((product) {
+            final code = product.productCode.toLowerCase();
+            final name = product.productName.toLowerCase();
+            final unit = product.unit.toLowerCase();
+            return code.contains(text) ||
+                name.contains(text) ||
+                unit.contains(text);
+          }),
+        );
     });
   }
 
@@ -2630,8 +3451,12 @@ class _InventoryPageState extends State<InventoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final inventoryProductCodes = _products.map((product) => product.productCode).join(', ');
-    debugPrint('InventoryPage build displaying ${_products.length} products: [$inventoryProductCodes]');
+    final inventoryProductCodes = _products
+        .map((product) => product.productCode)
+        .join(', ');
+    debugPrint(
+      'InventoryPage build displaying ${_products.length} products: [$inventoryProductCodes]',
+    );
     return Scaffold(
       appBar: AppBar(title: const Text('Inventory')),
       body: SafeArea(
@@ -2650,7 +3475,10 @@ class _InventoryPageState extends State<InventoryPage> {
                       labelText: 'Search by product code, name or unit',
                       filled: true,
                       fillColor: Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade300)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
                       suffixIcon: _searchController.text.isEmpty
                           ? null
                           : IconButton(
@@ -2665,67 +3493,73 @@ class _InventoryPageState extends State<InventoryPage> {
               ),
               const SizedBox(height: 16),
               Expanded(
-  child: _filteredStockLots.isEmpty
-      ? const Center(
-          child: Text(
-            'No purchase stock lots found.',
-            style: TextStyle(fontSize: 14, color: Colors.black54),
-          ),
-        )
-      : ListView.builder(
-          itemCount: _filteredStockLots.length,
-          itemBuilder: (context, index) {
-            final lot = _filteredStockLots[index];
+                child: _filteredStockLots.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No purchase stock lots found.',
+                          style: TextStyle(fontSize: 14, color: Colors.black54),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _filteredStockLots.length,
+                        itemBuilder: (context, index) {
+                          final lot = _filteredStockLots[index];
 
-            return Container(
-              height: 58,
-              margin: const EdgeInsets.only(bottom: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: kCardBlue,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      '${lot.lotNo} - ${lot.productName}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.left,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: kPrimaryBlue,
+                          return Container(
+                            height: 58,
+                            margin: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            decoration: BoxDecoration(
+                              color: kCardBlue,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    '${lot.lotNo} - ${lot.productName}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.left,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: kPrimaryBlue,
+                                    ),
+                                  ),
+                                ),
+                                _inventoryInfo('Purchase No', lot.purchaseNo),
+                                _inventoryInfo('Date', lot.purchaseDate),
+                                _inventoryInfo('Unit', lot.unit),
+                                _inventoryInfo(
+                                  'Qty',
+                                  lot.remainingQty.toString(),
+                                ),
+                                _inventoryInfo(
+                                  'Remaining',
+                                  lot.remainingQty.toString(),
+                                ),
+                                _inventoryInfo(
+                                  'Purchase Rate',
+                                  '₹${lot.purchaseRate.toStringAsFixed(2)}',
+                                ),
+                                _inventoryInfo(
+                                  'Total Value',
+                                  '₹${(lot.remainingQty * lot.purchaseRate).toStringAsFixed(2)}',
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                  ),
-                  _inventoryInfo('Purchase No', lot.purchaseNo),
-                  _inventoryInfo('Date', lot.purchaseDate),
-                  _inventoryInfo('Unit', lot.unit),
-                  _inventoryInfo('Qty', lot.remainingQty.toString()),
-                  _inventoryInfo('Remaining', lot.remainingQty.toString()),
-_inventoryInfo(
-  'Purchase Rate',
-  '₹${lot.purchaseRate.toStringAsFixed(2)}',
-),
-_inventoryInfo(
-  'Total Value',
-  '₹${(lot.remainingQty * lot.purchaseRate).toStringAsFixed(2)}',
-),
-                ],
               ),
-            );
-          },
-        ),
-),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _inventoryInfo(String label, String value) {
@@ -2739,10 +3573,7 @@ _inventoryInfo(
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 9,
-              color: Colors.black54,
-            ),
+            style: const TextStyle(fontSize: 9, color: Colors.black54),
           ),
           const SizedBox(height: 2),
           Text(
@@ -2828,7 +3659,9 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
 
     for (final entry in saved) {
       try {
-        final product = ProductMaster.fromJson(jsonDecode(entry) as Map<String, dynamic>);
+        final product = ProductMaster.fromJson(
+          jsonDecode(entry) as Map<String, dynamic>,
+        );
         final key = product.productCode.trim().toLowerCase();
         if (key.isNotEmpty) {
           productMap[key] = product;
@@ -2852,7 +3685,11 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
     if (_products.isEmpty) {
       await _loadProducts();
     }
-    final index = _products.indexWhere((product) => product.productCode.trim().toLowerCase() == productCode.trim().toLowerCase());
+    final index = _products.indexWhere(
+      (product) =>
+          product.productCode.trim().toLowerCase() ==
+          productCode.trim().toLowerCase(),
+    );
     if (index != -1) {
       _loadForEdit(index);
     }
@@ -2862,7 +3699,11 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
     if (_products.isEmpty) {
       await _loadProducts();
     }
-    final index = _products.indexWhere((product) => product.productCode.trim().toLowerCase() == productCode.trim().toLowerCase());
+    final index = _products.indexWhere(
+      (product) =>
+          product.productCode.trim().toLowerCase() ==
+          productCode.trim().toLowerCase(),
+    );
     if (index != -1) {
       await _confirmDeleteProduct(index);
     }
@@ -2875,8 +3716,12 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
       return;
     }
     final enteredLower = v.toLowerCase();
-    final existingIndex = _products.indexWhere((p) => p.productCode.trim().toLowerCase() == enteredLower);
-    final isDup = _editingIndex == null ? existingIndex != -1 : (existingIndex != -1 && existingIndex != _editingIndex);
+    final existingIndex = _products.indexWhere(
+      (p) => p.productCode.trim().toLowerCase() == enteredLower,
+    );
+    final isDup = _editingIndex == null
+        ? existingIndex != -1
+        : (existingIndex != -1 && existingIndex != _editingIndex);
     if (isDup != _isDuplicateCode) {
       setState(() {
         _isDuplicateCode = isDup;
@@ -2886,7 +3731,10 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
 
   Future<void> _persistProducts() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('product_master_list', _products.map((product) => jsonEncode(product.toJson())).toList());
+    await prefs.setStringList(
+      'product_master_list',
+      _products.map((product) => jsonEncode(product.toJson())).toList(),
+    );
   }
 
   void _clearForm() {
@@ -2915,7 +3763,9 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
     _selectedUnit = product.unit;
     _purchasePriceController.text = product.purchasePrice.toStringAsFixed(2);
     _mrpPriceController.text = product.mrpPrice.toStringAsFixed(2);
-    _defaultSalePriceController.text = product.defaultSalePrice.toStringAsFixed(2);
+    _defaultSalePriceController.text = product.defaultSalePrice.toStringAsFixed(
+      2,
+    );
     _minimumStockAlertController.text = product.minimumStockAlert.toString();
     _currentStockController.text = product.currentStock.toString();
     setState(() {});
@@ -2925,7 +3775,9 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
     final enteredCode = _productCodeController.text.trim();
     final enteredLower = enteredCode.toLowerCase();
 
-    final duplicateExists = _products.any((p) => p.productCode.trim().toLowerCase() == enteredLower);
+    final duplicateExists = _products.any(
+      (p) => p.productCode.trim().toLowerCase() == enteredLower,
+    );
 
     if (_editingIndex == null && duplicateExists) {
       if (!mounted) return;
@@ -2944,15 +3796,21 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
       unit: _selectedUnit,
       purchasePrice: double.tryParse(_purchasePriceController.text.trim()) ?? 0,
       mrpPrice: double.tryParse(_mrpPriceController.text.trim()) ?? 0,
-      defaultSalePrice: double.tryParse(_defaultSalePriceController.text.trim()) ?? 0,
-      minimumStockAlert: int.tryParse(_minimumStockAlertController.text.trim()) ?? 0,
+      defaultSalePrice:
+          double.tryParse(_defaultSalePriceController.text.trim()) ?? 0,
+      minimumStockAlert:
+          int.tryParse(_minimumStockAlertController.text.trim()) ?? 0,
       currentStock: 0,
     );
 
     final editingIndex = _editingIndex;
-    final existingIndex = _products.indexWhere((item) => item.productCode.trim().toLowerCase() == enteredLower);
+    final existingIndex = _products.indexWhere(
+      (item) => item.productCode.trim().toLowerCase() == enteredLower,
+    );
 
-    if (editingIndex != null && existingIndex != -1 && existingIndex != editingIndex) {
+    if (editingIndex != null &&
+        existingIndex != -1 &&
+        existingIndex != editingIndex) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -2970,40 +3828,42 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
       });
       await _persistProducts();
       await _loadProducts();
-      debugPrint('ProductMasterPage after save (update) saved ${_products.length} products: ${_products.map((p) => p.productCode).join(", ")}');
+      debugPrint(
+        'ProductMasterPage after save (update) saved ${_products.length} products: ${_products.map((p) => p.productCode).join(", ")}',
+      );
       if (!mounted) return;
       _clearForm();
       final overlay = Overlay.of(context);
-late OverlayEntry entry;
+      late OverlayEntry entry;
 
+      entry = OverlayEntry(
+        builder: (context) => Positioned(
+          bottom: 20,
+          left: 0,
+          right: 0,
 
-entry = OverlayEntry(
-  builder: (context) => Positioned(
-    bottom: 20,
-    left:0,
-    right: 0, 
-    
-    child: Material(
-  color: Colors.transparent,
-  child: Center(
-    child: const Text(
-      'Product Updated',
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        color: kPrimaryBlue,
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-      ),
-    ),
-  ),
-),
-));
+          child: Material(
+            color: Colors.transparent,
+            child: Center(
+              child: const Text(
+                'Product Updated',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: kPrimaryBlue,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 
-overlay.insert(entry);
+      overlay.insert(entry);
 
-Future.delayed(const Duration(seconds: 2), () {
-  if (entry.mounted) entry.remove();
-});
+      Future.delayed(const Duration(seconds: 2), () {
+        if (entry.mounted) entry.remove();
+      });
       return;
     }
 
@@ -3012,39 +3872,41 @@ Future.delayed(const Duration(seconds: 2), () {
     });
     await _persistProducts();
     await _loadProducts();
-    debugPrint('ProductMasterPage after save (create) saved ${_products.length} products: ${_products.map((p) => p.productCode).join(", ")}');
+    debugPrint(
+      'ProductMasterPage after save (create) saved ${_products.length} products: ${_products.map((p) => p.productCode).join(", ")}',
+    );
     if (!mounted) return;
     _clearForm();
     final overlay = Overlay.of(context);
-late OverlayEntry entry;
+    late OverlayEntry entry;
 
-entry = OverlayEntry(
-  builder: (context) => Positioned(
-    bottom: 20,
-    left: 0,
-    right: 0,
-    child: Material(
-  color: Colors.transparent,
-  child: Center(
-    child: const Text(
-      'Product Saved',
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        color: kPrimaryBlue,
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
+    entry = OverlayEntry(
+      builder: (context) => Positioned(
+        bottom: 20,
+        left: 0,
+        right: 0,
+        child: Material(
+          color: Colors.transparent,
+          child: Center(
+            child: const Text(
+              'Product Saved',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: kPrimaryBlue,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
       ),
-    ),
-  ),
-),
-),
-);
+    );
 
-overlay.insert(entry);
+    overlay.insert(entry);
 
-Future.delayed(const Duration(seconds: 2), () {
-  if (entry.mounted) entry.remove();
-});
+    Future.delayed(const Duration(seconds: 2), () {
+      if (entry.mounted) entry.remove();
+    });
   }
 
   Future<void> _confirmDelete() async {
@@ -3056,8 +3918,14 @@ Future.delayed(const Duration(seconds: 2), () {
           title: const Text('Delete product'),
           content: const Text('Are you sure you want to delete this product?'),
           actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-            TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
           ],
         );
       },
@@ -3081,8 +3949,14 @@ Future.delayed(const Duration(seconds: 2), () {
           title: const Text('Delete product'),
           content: const Text('Are you sure you want to delete this product?'),
           actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-            TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
           ],
         );
       },
@@ -3116,10 +3990,18 @@ Future.delayed(const Duration(seconds: 2), () {
       builder: (context) {
         return AlertDialog(
           title: const Text('Clear all products'),
-          content: const Text('Are you sure you want to remove all saved products?'),
+          content: const Text(
+            'Are you sure you want to remove all saved products?',
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-            TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Clear', style: TextStyle(color: Colors.red))),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Clear', style: TextStyle(color: Colors.red)),
+            ),
           ],
         );
       },
@@ -3180,7 +4062,10 @@ Future.delayed(const Duration(seconds: 2), () {
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 7,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(10),
@@ -3218,11 +4103,14 @@ Future.delayed(const Duration(seconds: 2), () {
                             ),
                           ),
                           TextButton(
-                            onPressed: () => _loadForEditByCode(product.productCode),
+                            onPressed: () =>
+                                _loadForEditByCode(product.productCode),
                             child: const Text('Edit'),
                           ),
                           TextButton(
-                            onPressed: () => _confirmDeleteProductByCode(product.productCode),
+                            onPressed: () => _confirmDeleteProductByCode(
+                              product.productCode,
+                            ),
                             child: const Text(
                               'Delete',
                               style: TextStyle(color: Colors.red),
@@ -3239,6 +4127,7 @@ Future.delayed(const Duration(seconds: 2), () {
       ),
     );
   }
+
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
@@ -3261,7 +4150,10 @@ Future.delayed(const Duration(seconds: 2), () {
           hintText: hint,
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 12,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide(color: Colors.grey.shade300),
@@ -3285,13 +4177,20 @@ Future.delayed(const Duration(seconds: 2), () {
           labelText: label,
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 12,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
         ),
-        items: items.map((option) => DropdownMenuItem(value: option, child: Text(option))).toList(),
+        items: items
+            .map(
+              (option) => DropdownMenuItem(value: option, child: Text(option)),
+            )
+            .toList(),
         onChanged: onChanged,
       ),
     );
@@ -3312,13 +4211,14 @@ Future.delayed(const Duration(seconds: 2), () {
 
   @override
   Widget build(BuildContext context) {
-    final savedProductsCodes = _products.map((product) => product.productCode).join(', ');
-    debugPrint('ProductMasterPage Saved Products section count=${_products.length}, codes=[$savedProductsCodes]');
+    final savedProductsCodes = _products
+        .map((product) => product.productCode)
+        .join(', ');
+    debugPrint(
+      'ProductMasterPage Saved Products section count=${_products.length}, codes=[$savedProductsCodes]',
+    );
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Product Master'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Product Master'), elevation: 0),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final width = constraints.maxWidth;
@@ -3327,22 +4227,39 @@ Future.delayed(const Duration(seconds: 2), () {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             child: Center(
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: isWide ? 1200 : double.infinity),
+                constraints: BoxConstraints(
+                  maxWidth: isWide ? 1200 : double.infinity,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Card(
                       color: kCardBlue,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                       elevation: 0,
                       child: Padding(
                         padding: const EdgeInsets.all(18),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: const [
-                            Text('Product Master', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+                            Text(
+                              'Product Master',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: kPrimaryBlue,
+                              ),
+                            ),
                             SizedBox(height: 8),
-                            Text('Manage products ready for billing, inventory alerts, and future sales search.', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
+                            Text(
+                              'Manage products ready for billing, inventory alerts, and future sales search.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -3350,7 +4267,9 @@ Future.delayed(const Duration(seconds: 2), () {
                     const SizedBox(height: 16),
                     Card(
                       color: kCardBlue,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                       elevation: 0,
                       child: Padding(
                         padding: const EdgeInsets.all(18),
@@ -3368,13 +4287,24 @@ Future.delayed(const Duration(seconds: 2), () {
                                       controller: _productCodeController,
                                       validator: (value) {
                                         final v = value?.trim() ?? '';
-                                        if (v.isEmpty) return 'Product code is required';
+                                        if (v.isEmpty)
+                                          return 'Product code is required';
                                         final enteredLower = v.toLowerCase();
-                                        final existingIndex = _products.indexWhere((p) => p.productCode.trim().toLowerCase() == enteredLower);
+                                        final existingIndex = _products
+                                            .indexWhere(
+                                              (p) =>
+                                                  p.productCode
+                                                      .trim()
+                                                      .toLowerCase() ==
+                                                  enteredLower,
+                                            );
                                         if (_editingIndex == null) {
-                                          if (existingIndex != -1) return 'Product code already exists';
+                                          if (existingIndex != -1)
+                                            return 'Product code already exists';
                                         } else {
-                                          if (existingIndex != -1 && existingIndex != _editingIndex) return 'Product code already exists';
+                                          if (existingIndex != -1 &&
+                                              existingIndex != _editingIndex)
+                                            return 'Product code already exists';
                                         }
                                         return null;
                                       },
@@ -3385,7 +4315,10 @@ Future.delayed(const Duration(seconds: 2), () {
                                     child: _buildTextField(
                                       label: 'Product Name *',
                                       controller: _productNameController,
-                                      validator: (value) => value == null || value.trim().isEmpty ? 'Product name is required' : null,
+                                      validator: (value) =>
+                                          value == null || value.trim().isEmpty
+                                          ? 'Product name is required'
+                                          : null,
                                     ),
                                   ),
                                 ],
@@ -3400,7 +4333,8 @@ Future.delayed(const Duration(seconds: 2), () {
                                       items: _categoryOptions,
                                       onChanged: (value) {
                                         setState(() {
-                                          _selectedCategory = value ?? _selectedCategory;
+                                          _selectedCategory =
+                                              value ?? _selectedCategory;
                                         });
                                       },
                                     ),
@@ -3413,7 +4347,8 @@ Future.delayed(const Duration(seconds: 2), () {
                                       items: _unitOptions,
                                       onChanged: (value) {
                                         setState(() {
-                                          _selectedUnit = value ?? _selectedUnit;
+                                          _selectedUnit =
+                                              value ?? _selectedUnit;
                                         });
                                       },
                                     ),
@@ -3428,7 +4363,10 @@ Future.delayed(const Duration(seconds: 2), () {
                                       label: 'Purchase Price *',
                                       controller: _purchasePriceController,
                                       keyboardType: TextInputType.number,
-                                      validator: (value) => value == null || value.trim().isEmpty ? 'Purchase price is required' : null,
+                                      validator: (value) =>
+                                          value == null || value.trim().isEmpty
+                                          ? 'Purchase price is required'
+                                          : null,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -3437,7 +4375,10 @@ Future.delayed(const Duration(seconds: 2), () {
                                       label: 'MRP Price *',
                                       controller: _mrpPriceController,
                                       keyboardType: TextInputType.number,
-                                      validator: (value) => value == null || value.trim().isEmpty ? 'MRP price is required' : null,
+                                      validator: (value) =>
+                                          value == null || value.trim().isEmpty
+                                          ? 'MRP price is required'
+                                          : null,
                                     ),
                                   ),
                                 ],
@@ -3450,7 +4391,10 @@ Future.delayed(const Duration(seconds: 2), () {
                                       label: 'Default Sale Price *',
                                       controller: _defaultSalePriceController,
                                       keyboardType: TextInputType.number,
-                                      validator: (value) => value == null || value.trim().isEmpty ? 'Sale price is required' : null,
+                                      validator: (value) =>
+                                          value == null || value.trim().isEmpty
+                                          ? 'Sale price is required'
+                                          : null,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -3459,16 +4403,17 @@ Future.delayed(const Duration(seconds: 2), () {
                                       label: 'Minimum Stock Alert *',
                                       controller: _minimumStockAlertController,
                                       keyboardType: TextInputType.number,
-                                      validator: (value) => value == null || value.trim().isEmpty ? 'Minimum stock alert is required' : null,
+                                      validator: (value) =>
+                                          value == null || value.trim().isEmpty
+                                          ? 'Minimum stock alert is required'
+                                          : null,
                                     ),
                                   ),
                                 ],
                               ),
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  
-                                ],
+                                children: [],
                               ),
                               const SizedBox(height: 10),
                               Wrap(
@@ -3476,32 +4421,76 @@ Future.delayed(const Duration(seconds: 2), () {
                                 runSpacing: 12,
                                 children: [
                                   FilledButton(
-                                    onPressed: (_isDuplicateCode && !_isEditing) ? null : _saveProduct,
+                                    onPressed: (_isDuplicateCode && !_isEditing)
+                                        ? null
+                                        : _saveProduct,
                                     style: FilledButton.styleFrom(
                                       backgroundColor: kPrimaryBlue,
-                                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                        horizontal: 20,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
                                     ),
-                                    child: Text(_isEditing ? 'Update Product' : 'Save Product', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                                    child: Text(
+                                      _isEditing
+                                          ? 'Update Product'
+                                          : 'Save Product',
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                                   ),
                                   FilledButton(
-                                    onPressed: _isEditing ? _confirmDelete : null,
+                                    onPressed: _isEditing
+                                        ? _confirmDelete
+                                        : null,
                                     style: FilledButton.styleFrom(
-                                      backgroundColor: _isEditing ? Colors.redAccent : Colors.grey.shade400,
-                                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      backgroundColor: _isEditing
+                                          ? Colors.redAccent
+                                          : Colors.grey.shade400,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                        horizontal: 20,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
                                     ),
-                                    child: const Text('Delete Product', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                                    child: const Text(
+                                      'Delete Product',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                                   ),
                                   OutlinedButton(
                                     onPressed: _clearForm,
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: kPrimaryBlue,
-                                      side: const BorderSide(color: kPrimaryBlue),
-                                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      side: const BorderSide(
+                                        color: kPrimaryBlue,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                        horizontal: 20,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
                                     ),
-                                    child: const Text('Clear', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                                    child: const Text(
+                                      'Clear',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -3562,6 +4551,7 @@ class PurchaseBillItem {
     };
   }
 }
+
 class PurchaseStockLot {
   final String lotNo;
   final String purchaseNo;
@@ -3588,17 +4578,17 @@ class PurchaseStockLot {
   });
 
   Map<String, dynamic> toJson() => {
-        'lotNo': lotNo,
-        'purchaseNo': purchaseNo,
-        'purchaseDate': purchaseDate,
-        'supplierName': supplierName,
-        'productCode': productCode,
-        'productName': productName,
-        'unit': unit,
-        'qty': qty,
-        'remainingQty': remainingQty,
-        'purchaseRate': purchaseRate,
-      };
+    'lotNo': lotNo,
+    'purchaseNo': purchaseNo,
+    'purchaseDate': purchaseDate,
+    'supplierName': supplierName,
+    'productCode': productCode,
+    'productName': productName,
+    'unit': unit,
+    'qty': qty,
+    'remainingQty': remainingQty,
+    'purchaseRate': purchaseRate,
+  };
 
   factory PurchaseStockLot.fromJson(Map<String, dynamic> json) {
     return PurchaseStockLot(
@@ -3615,6 +4605,7 @@ class PurchaseStockLot {
     );
   }
 }
+
 class PurchaseBill {
   final String purchaseNo;
   final String purchaseDate;
@@ -3636,8 +4627,12 @@ class PurchaseBill {
       purchaseDate: json['purchaseDate'] as String? ?? '',
       supplierName: json['supplierName'] as String? ?? '',
       grandTotal: (json['grandTotal'] as num?)?.toDouble() ?? 0,
-      items: (json['items'] as List<dynamic>?)
-              ?.map((item) => PurchaseBillItem.fromJson(item as Map<String, dynamic>))
+      items:
+          (json['items'] as List<dynamic>?)
+              ?.map(
+                (item) =>
+                    PurchaseBillItem.fromJson(item as Map<String, dynamic>),
+              )
               .toList() ??
           [],
     );
@@ -3719,16 +4714,20 @@ class SaleEntry {
   final ProductMaster product;
   final TextEditingController qtyController;
   final TextEditingController salePriceController;
-  final TextEditingController discountController = TextEditingController(text: '0');
+  final TextEditingController discountController = TextEditingController(
+    text: '0',
+  );
   int qty;
   String discountType;
 
-
   SaleEntry({required this.product, this.qty = 1, this.discountType = '₹'})
-      : qtyController = TextEditingController(text: qty.toString()),
-        salePriceController = TextEditingController(text: product.defaultSalePrice.toStringAsFixed(2));
+    : qtyController = TextEditingController(text: qty.toString()),
+      salePriceController = TextEditingController(
+        text: product.defaultSalePrice.toStringAsFixed(2),
+      );
 
-  double get salePrice => double.tryParse(salePriceController.text) ?? product.defaultSalePrice;
+  double get salePrice =>
+      double.tryParse(salePriceController.text) ?? product.defaultSalePrice;
   double get subtotal => qty * salePrice;
   double get discountValue => double.tryParse(discountController.text) ?? 0;
 
@@ -3837,7 +4836,9 @@ class SaleHistoryEntry {
       saleType: json['saleType'] as String,
       customer: json['customer'] as String,
       items: (json['items'] as List<dynamic>)
-          .map((item) => SaleHistoryProduct.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => SaleHistoryProduct.fromJson(item as Map<String, dynamic>),
+          )
           .toList(),
       grandTotal: (json['grandTotal'] as num).toDouble(),
       paidAmount: (json['paidAmount'] as num).toDouble(),
@@ -3936,8 +4937,12 @@ class SalesReturnEntry {
       returnNo: json['returnNo'] as String? ?? '',
       billNo: json['billNo'] as String? ?? '',
       customer: json['customer'] as String? ?? '',
-      items: (json['items'] as List<dynamic>?)
-              ?.map((item) => SalesReturnProduct.fromJson(item as Map<String, dynamic>))
+      items:
+          (json['items'] as List<dynamic>?)
+              ?.map(
+                (item) =>
+                    SalesReturnProduct.fromJson(item as Map<String, dynamic>),
+              )
               .toList() ??
           [],
       returnAmount: (json['returnAmount'] as num?)?.toDouble() ?? 0,
@@ -3950,7 +4955,8 @@ class ReturnItem {
   final TextEditingController qtyController;
   int returnQty;
 
-  ReturnItem({required this.item, this.returnQty = 0}) : qtyController = TextEditingController(text: '0');
+  ReturnItem({required this.item, this.returnQty = 0})
+    : qtyController = TextEditingController(text: '0');
 
   int get soldQty => item.qty;
 
@@ -4023,7 +5029,11 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getStringList('sales_history') ?? [];
     final entries = saved
-        .map((entry) => SaleHistoryEntry.fromJson(jsonDecode(entry) as Map<String, dynamic>))
+        .map(
+          (entry) => SaleHistoryEntry.fromJson(
+            jsonDecode(entry) as Map<String, dynamic>,
+          ),
+        )
         .toList();
     setState(() {
       _history.clear();
@@ -4044,11 +5054,13 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
       }
       _filteredHistory
         ..clear()
-        ..addAll(_history.where((entry) {
-          final billText = entry.billNo.toLowerCase();
-          final customerText = entry.customer.toLowerCase();
-          return billText.contains(text) || customerText.contains(text);
-        }));
+        ..addAll(
+          _history.where((entry) {
+            final billText = entry.billNo.toLowerCase();
+            final customerText = entry.customer.toLowerCase();
+            return billText.contains(text) || customerText.contains(text);
+          }),
+        );
     });
   }
 
@@ -4061,51 +5073,159 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
     });
   }
 
-  int get _totalReturnQty => _returnItems.fold(0, (sum, item) => sum + item.returnQty);
-  double get _totalReturnAmount => _returnItems.fold(0.0, (sum, item) => sum + item.amount);
+  int get _totalReturnQty =>
+      _returnItems.fold(0, (sum, item) => sum + item.returnQty);
+  double get _totalReturnAmount =>
+      _returnItems.fold(0.0, (sum, item) => sum + item.amount);
 
   Future<void> _saveReturn() async {
     if (_selectedEntry == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select a bill first')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Select a bill first')));
       return;
     }
 
     if (_returnItems.every((item) => item.returnQty == 0)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter return quantity for at least one product')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter return quantity for at least one product'),
+        ),
+      );
       return;
     }
 
     for (final item in _returnItems) {
       if (item.returnQty > item.soldQty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Return quantity cannot exceed sold quantity')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Return quantity cannot exceed sold quantity'),
+          ),
+        );
         return;
       }
     }
 
     final prefs = await SharedPreferences.getInstance();
-    final productsSaved = prefs.getStringList('product_master_list') ?? [];
-    final products = productsSaved
-        .map((entry) => ProductMaster.fromJson(jsonDecode(entry) as Map<String, dynamic>))
+
+    final lotSaved = prefs.getStringList('purchase_stock_lot_list') ?? [];
+    final lotList = lotSaved
+        .map(
+          (entry) => PurchaseStockLot.fromJson(
+            jsonDecode(entry) as Map<String, dynamic>,
+          ),
+        )
         .toList();
 
+    final returnQtyByCode = <String, int>{};
     for (final item in _returnItems.where((item) => item.returnQty > 0)) {
-      final index = products.indexWhere((product) => product.productCode.trim().toLowerCase() == item.item.productCode.trim().toLowerCase());
-      if (index != -1) {
-        final product = products[index];
-        products[index] = ProductMaster(
-          productCode: product.productCode,
-          productName: product.productName,
-          category: product.category,
-          unit: product.unit,
-          purchasePrice: product.purchasePrice,
-          mrpPrice: product.mrpPrice,
-          defaultSalePrice: product.defaultSalePrice,
-          minimumStockAlert: product.minimumStockAlert,
-          currentStock: product.currentStock + item.returnQty,
+      final code = item.item.productCode.trim().toLowerCase();
+      if (code.isEmpty) continue;
+      returnQtyByCode[code] = (returnQtyByCode[code] ?? 0) + item.returnQty;
+    }
+
+    if (returnQtyByCode.isNotEmpty) {
+      for (var i = 0; i < lotList.length; i++) {
+        final lot = lotList[i];
+        final code = lot.productCode.trim().toLowerCase();
+        final returnQty = returnQtyByCode[code] ?? 0;
+        if (returnQty <= 0) continue;
+
+        lotList[i] = PurchaseStockLot(
+          lotNo: lot.lotNo,
+          purchaseNo: lot.purchaseNo,
+          purchaseDate: lot.purchaseDate,
+          supplierName: lot.supplierName,
+          productCode: lot.productCode,
+          productName: lot.productName,
+          unit: lot.unit,
+          qty: lot.qty,
+          remainingQty: lot.remainingQty + returnQty,
+          purchaseRate: lot.purchaseRate,
         );
+        returnQtyByCode[code] = 0;
+      }
+      await prefs.setStringList(
+        'purchase_stock_lot_list',
+        lotList.map((lot) => jsonEncode(lot.toJson())).toList(),
+      );
+    }
+
+    final stockByProduct = <String, int>{};
+    for (final lot in lotList) {
+      final code = lot.productCode.trim().toLowerCase();
+      if (code.isEmpty) continue;
+      stockByProduct[code] = (stockByProduct[code] ?? 0) + lot.remainingQty;
+    }
+
+    final productsSaved = prefs.getStringList('product_master_list') ?? [];
+    final products = productsSaved
+        .map(
+          (entry) =>
+              ProductMaster.fromJson(jsonDecode(entry) as Map<String, dynamic>),
+        )
+        .map((product) {
+          final code = product.productCode.trim().toLowerCase();
+          final currentStock = stockByProduct[code] ?? 0;
+          return ProductMaster(
+            productCode: product.productCode,
+            productName: product.productName,
+            category: product.category,
+            unit: product.unit,
+            purchasePrice: product.purchasePrice,
+            mrpPrice: product.mrpPrice,
+            defaultSalePrice: product.defaultSalePrice,
+            minimumStockAlert: product.minimumStockAlert,
+            currentStock: currentStock,
+          );
+        })
+        .toList();
+    await prefs.setStringList(
+      'product_master_list',
+      products.map((product) => jsonEncode(product.toJson())).toList(),
+    );
+
+    final customerName = _selectedEntry?.customer.trim() ?? '';
+    if (customerName.isNotEmpty) {
+      final savedParties = prefs.getString('parties_list');
+      if (savedParties != null && savedParties.isNotEmpty) {
+        dynamic decodedParties;
+        try {
+          decodedParties = jsonDecode(savedParties);
+        } catch (_) {
+          decodedParties = null;
+        }
+
+        if (decodedParties is List) {
+          var updated = false;
+          final updatedParties = decodedParties.map((party) {
+            if (party is! Map) return party;
+            final partyMap = Map<String, dynamic>.from(party);
+            final partyName = (partyMap['partyName'] ?? '').toString().trim();
+            final partyType = (partyMap['partyType'] ?? '').toString();
+            final isCustomerParty =
+                partyType == 'Customer' || partyType == 'Both';
+            if (!updated && isCustomerParty && partyName == customerName) {
+              final existingBalance =
+                  double.tryParse(
+                    (partyMap['openingBalance'] ?? '0').toString(),
+                  ) ??
+                  0.0;
+              final reducedBalance = existingBalance - _totalReturnAmount;
+              final newBalance = reducedBalance <= 0 ? 0.0 : reducedBalance;
+              partyMap['openingBalance'] = newBalance.toStringAsFixed(2);
+              partyMap['balanceType'] = newBalance <= 0 ? 'Zero' : 'Receivable';
+              updated = true;
+            }
+            return partyMap;
+          }).toList();
+
+          if (updated) {
+            await prefs.setString('parties_list', jsonEncode(updatedParties));
+          }
+        }
       }
     }
-    await prefs.setStringList('product_master_list', products.map((product) => jsonEncode(product.toJson())).toList());
 
     final savedReturns = prefs.getStringList('sales_return_history') ?? [];
     final returnEntry = SalesReturnEntry(
@@ -4113,15 +5233,20 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
       returnNo: _returnNoController.text.trim(),
       billNo: _selectedEntry!.billNo,
       customer: _selectedEntry!.customer,
-      items: _returnItems.where((item) => item.returnQty > 0).map((item) => SalesReturnProduct(
-            productCode: item.item.productCode,
-            productName: item.item.productName,
-            soldQty: item.soldQty,
-            returnQty: item.returnQty,
-            salePrice: item.item.salePrice,
-            discountType: item.item.discountType,
-            discountValue: item.item.discountValue,
-          )).toList(),
+      items: _returnItems
+          .where((item) => item.returnQty > 0)
+          .map(
+            (item) => SalesReturnProduct(
+              productCode: item.item.productCode,
+              productName: item.item.productName,
+              soldQty: item.soldQty,
+              returnQty: item.returnQty,
+              salePrice: item.item.salePrice,
+              discountType: item.item.discountType,
+              discountValue: item.item.discountValue,
+            ),
+          )
+          .toList(),
       returnAmount: _totalReturnAmount,
     );
     savedReturns.insert(0, jsonEncode(returnEntry.toJson()));
@@ -4142,7 +5267,9 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
     });
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sales return saved successfully')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Sales return saved successfully')),
+    );
   }
 
   @override
@@ -4159,10 +5286,7 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sales Return'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Sales Return'), elevation: 0),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -4176,7 +5300,14 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Search Previous Sales', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+                      const Text(
+                        'Search Previous Sales',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: kPrimaryBlue,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: _searchController,
@@ -4184,7 +5315,10 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
                           labelText: 'Search by Bill No or Customer',
                           filled: true,
                           fillColor: Colors.white,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade300)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
                         ),
                       ),
                     ],
@@ -4193,7 +5327,9 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: _selectedEntry == null ? _buildHistoryList(context) : _buildReturnForm(context),
+                child: _selectedEntry == null
+                    ? _buildHistoryList(context)
+                    : _buildReturnForm(context),
               ),
             ],
           ),
@@ -4204,7 +5340,12 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
 
   Widget _buildHistoryList(BuildContext context) {
     if (_filteredHistory.isEmpty) {
-      return const Center(child: Text('No sales history found.', style: TextStyle(color: Color(0xFF64748B))));
+      return const Center(
+        child: Text(
+          'No sales history found.',
+          style: TextStyle(color: Color(0xFF64748B)),
+        ),
+      );
     }
     return ListView.builder(
       itemCount: _filteredHistory.length,
@@ -4219,8 +5360,20 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
               children: [
                 Row(
                   children: [
-                    Expanded(child: Text(entry.billNo, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: kPrimaryBlue))),
-                    FilledButton(onPressed: () => _selectEntry(entry), child: const Text('Select')),
+                    Expanded(
+                      child: Text(
+                        entry.billNo,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: kPrimaryBlue,
+                        ),
+                      ),
+                    ),
+                    FilledButton(
+                      onPressed: () => _selectEntry(entry),
+                      child: const Text('Select'),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -4229,9 +5382,18 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
                   runSpacing: 8,
                   children: [
                     _buildHistoryData('Date', entry.date),
-                    _buildHistoryData('Customer', entry.customer.isEmpty ? 'N/A' : entry.customer),
-                    _buildHistoryData('Total', '₹${entry.grandTotal.toStringAsFixed(2)}'),
-                    _buildHistoryData('Balance', '₹${entry.balance.toStringAsFixed(2)}'),
+                    _buildHistoryData(
+                      'Customer',
+                      entry.customer.isEmpty ? 'N/A' : entry.customer,
+                    ),
+                    _buildHistoryData(
+                      'Total',
+                      '₹${entry.grandTotal.toStringAsFixed(2)}',
+                    ),
+                    _buildHistoryData(
+                      'Balance',
+                      '₹${entry.balance.toStringAsFixed(2)}',
+                    ),
                   ],
                 ),
               ],
@@ -4255,21 +5417,160 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Return Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(child: _buildDetailRow('Return No', _returnNoController.text)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildDetailRow('Date', _returnDateController.text)),
-                    ],
+                  const Text(
+                    'Return Details',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: kPrimaryBlue,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(child: _buildDetailRow('Bill No', selected.billNo)),
+                      SizedBox(
+                        width: 240,
+                        height: 70,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Return No',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _returnNoController.text,
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: kPrimaryBlue,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Expanded(child: _buildDetailRow('Customer', selected.customer.isEmpty ? 'N/A' : selected.customer)),
+                      SizedBox(
+                        width: 240,
+                        height: 70,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Date',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _returnDateController.text,
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: kPrimaryBlue,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 240,
+                        height: 70,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Bill No',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                selected.billNo,
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: kPrimaryBlue,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 420,
+                        height: 70,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Customer',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                selected.customer.isEmpty
+                                    ? 'N/A'
+                                    : selected.customer,
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: kPrimaryBlue,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -4284,52 +5585,207 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Return Items', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+                  const Text(
+                    'Return Items',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: kPrimaryBlue,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Column(
                     children: _returnItems.map((item) {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.grey.shade300)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        height: 84,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Row(
                           children: [
-                            Text('${item.item.productCode} - ${item.item.productName}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 8,
-                              children: [
-                                _buildDetailRow('Sold Qty', item.soldQty.toString()),
-                                SizedBox(
-                                  width: 120,
-                                  child: TextField(
-                                    controller: item.qtyController,
-                                    keyboardType: TextInputType.number,
-                                    decoration: InputDecoration(
-                                      labelText: 'Return Qty',
-                                      filled: true,
-                                      fillColor: kLightBlue,
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                                      helperText: 'Max ${item.soldQty}',
-                                    ),
-                                    onChanged: (value) {
-                                      var qty = int.tryParse(value) ?? 0;
-                                      if (qty > item.soldQty) {
-                                        qty = item.soldQty;
-                                      }
-                                      item.returnQty = qty;
-                                      if (item.qtyController.text != qty.toString()) {
-                                        item.qtyController.text = qty.toString();
-                                        item.qtyController.selection = TextSelection.collapsed(offset: item.qtyController.text.length);
-                                      }
-                                      setState(() {});
-                                    },
+                            SizedBox(
+                              width: 320,
+                              height: 56,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: kLightBlue,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
                                   ),
                                 ),
-                                _buildDetailRow('Return Amount', '₹${item.amount.toStringAsFixed(2)}'),
-                              ],
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  '${item.item.productCode} - ${item.item.productName}',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: kPrimaryBlue,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              width: 130,
+                              height: 56,
+                              child: TextField(
+                                controller: item.qtyController,
+                                keyboardType: TextInputType.number,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: kPrimaryBlue,
+                                ),
+                                decoration: InputDecoration(
+                                  labelText: 'Qty',
+                                  labelStyle: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                  filled: true,
+                                  fillColor: kLightBlue,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 10,
+                                  ),
+                                ),
+                                onChanged: (value) {
+                                  var qty = int.tryParse(value) ?? 0;
+                                  if (qty < 0) {
+                                    qty = 0;
+                                  }
+                                  item.returnQty = qty;
+                                  if (item.qtyController.text !=
+                                      qty.toString()) {
+                                    item.qtyController.text = qty.toString();
+                                    item
+                                        .qtyController
+                                        .selection = TextSelection.collapsed(
+                                      offset: item.qtyController.text.length,
+                                    );
+                                  }
+                                  setState(() {});
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              width: 120,
+                              height: 56,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: kLightBlue,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Sale',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '₹${item.item.salePrice.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: kPrimaryBlue,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              width: 190,
+                              height: 56,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: kLightBlue,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Return',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '₹${item.amount.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: kPrimaryBlue,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    item.returnQty = 0;
+                                    item.qtyController.text = '0';
+                                    _returnItems.remove(item);
+                                  });
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  side: BorderSide(color: Colors.grey.shade300),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Icon(Icons.delete, size: 18),
+                              ),
                             ),
                           ],
                         ),
@@ -4337,52 +5793,131 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
                     }).toList(),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Total Return', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF475467))),
-                      Text('₹${_totalReturnAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Total Qty', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF475467))),
-                      Text(_totalReturnQty.toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: _saveReturn,
-                          style: FilledButton.styleFrom(backgroundColor: kPrimaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 14),
-                            child: Text('Save Return', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  Container(
+                    width: 900,
+                    height: 58,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: kLightBlue.withAlpha(40),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 240,
+                          height: 46,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                const Text(
+                                  'Total Return',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: Color(0xFF475467),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '₹${_totalReturnAmount.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: kPrimaryBlue,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      OutlinedButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedEntry = null;
-                            _returnItems.clear();
-                          });
-                        },
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: kPrimaryBlue),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        const SizedBox(width: 24),
+                        SizedBox(
+                          width: 160,
+                          height: 46,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                const Text(
+                                  'Total Qty',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: Color(0xFF475467),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _totalReturnQty.toString(),
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: kPrimaryBlue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                          child: Text('Cancel', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
+                        const SizedBox(width: 40),
+                        SizedBox(
+                          width: 220,
+                          height: 46,
+                          child: FilledButton(
+                            onPressed: _saveReturn,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: kPrimaryBlue,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              'Save Return',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 14),
+                        SizedBox(
+                          width: 120,
+                          height: 46,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedEntry = null;
+                                _returnItems.clear();
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: kPrimaryBlue),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: kPrimaryBlue,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -4396,13 +5931,27 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
   Widget _buildDetailRow(String label, String value) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: kPrimaryBlue,
+            ),
+          ),
         ],
       ),
     );
@@ -4411,13 +5960,27 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
   Widget _buildHistoryData(String label, String value) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: kPrimaryBlue,
+            ),
+          ),
         ],
       ),
     );
@@ -4438,23 +6001,34 @@ class SalesDashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sales Dashboard'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Sales Dashboard'), elevation: 0),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             final width = constraints.maxWidth;
-            final crossAxisCount = width >= 1200 ? 3 : width >= 800 ? 2 : 1;
+            final crossAxisCount = width >= 1200
+                ? 3
+                : width >= 800
+                ? 2
+                : 1;
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Sales Operations', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+                  const Text(
+                    'Sales Operations',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: kPrimaryBlue,
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  const Text('Fast access to new invoices, returns, pending collections, and print options.', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
+                  const Text(
+                    'Fast access to new invoices, returns, pending collections, and print options.',
+                    style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+                  ),
                   const SizedBox(height: 18),
                   GridView.builder(
                     shrinkWrap: true,
@@ -4478,13 +6052,34 @@ class SalesDashboardPage extends StatelessWidget {
                           hoverColor: Colors.transparent,
                           onTap: () {
                             if (item.label == 'New Sale') {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const NewSalePage()));
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const NewSalePage(),
+                                ),
+                              );
                             } else if (item.label == 'Sale History') {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesHistoryPage()));
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SalesHistoryPage(),
+                                ),
+                              );
                             } else if (item.label == 'Sales Return') {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesReturnPage()));
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SalesReturnPage(),
+                                ),
+                              );
                             } else {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => SectionPage(title: item.label)));
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      SectionPage(title: item.label),
+                                ),
+                              );
                             }
                           },
                           child: Padding(
@@ -4498,14 +6093,36 @@ class SalesDashboardPage extends StatelessWidget {
                                     Container(
                                       height: 36,
                                       width: 36,
-                                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                                      child: Icon(item.icon, color: kPrimaryBlue, size: 20),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        item.icon,
+                                        color: kPrimaryBlue,
+                                        size: 20,
+                                      ),
                                     ),
                                     const SizedBox(width: 10),
-                                    Expanded(child: Text(item.label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: kPrimaryBlue))),
+                                    Expanded(
+                                      child: Text(
+                                        item.label,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15,
+                                          color: kPrimaryBlue,
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
-                                const Text('Tap to open', style: TextStyle(fontSize: 13, color: Color(0xFF475467))),
+                                const Text(
+                                  'Tap to open',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF475467),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -4546,7 +6163,11 @@ class _SalesHistoryPageState extends State<SalesHistoryPage> {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getStringList('sales_history') ?? [];
     final entries = saved
-        .map((entry) => SaleHistoryEntry.fromJson(jsonDecode(entry) as Map<String, dynamic>))
+        .map(
+          (entry) => SaleHistoryEntry.fromJson(
+            jsonDecode(entry) as Map<String, dynamic>,
+          ),
+        )
         .toList();
     setState(() {
       _history.clear();
@@ -4567,11 +6188,13 @@ class _SalesHistoryPageState extends State<SalesHistoryPage> {
       }
       _filteredHistory
         ..clear()
-        ..addAll(_history.where((entry) {
-          final billText = entry.billNo.toLowerCase();
-          final customerText = entry.customer.toLowerCase();
-          return billText.contains(text) || customerText.contains(text);
-        }));
+        ..addAll(
+          _history.where((entry) {
+            final billText = entry.billNo.toLowerCase();
+            final customerText = entry.customer.toLowerCase();
+            return billText.contains(text) || customerText.contains(text);
+          }),
+        );
     });
   }
 
@@ -4597,13 +6220,21 @@ class _SalesHistoryPageState extends State<SalesHistoryPage> {
                   labelText: 'Search by Bill / Estimate No or Customer',
                   filled: true,
                   fillColor: Colors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: _filteredHistory.isEmpty
-                    ? const Center(child: Text('No sale history found.', style: TextStyle(color: Color(0xFF64748B))))
+                    ? const Center(
+                        child: Text(
+                          'No sale history found.',
+                          style: TextStyle(color: Color(0xFF64748B)),
+                        ),
+                      )
                     : ListView.builder(
                         itemCount: _filteredHistory.length,
                         itemBuilder: (context, index) {
@@ -4618,10 +6249,25 @@ class _SalesHistoryPageState extends State<SalesHistoryPage> {
                                   Row(
                                     children: [
                                       Expanded(
-                                        child: Text(entry.billNo, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
+                                        child: Text(
+                                          entry.billNo,
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: kPrimaryBlue,
+                                          ),
+                                        ),
                                       ),
                                       FilledButton(
-                                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SaleHistoryDetailsPage(entry: entry))),
+                                        onPressed: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                SaleHistoryDetailsPage(
+                                                  entry: entry,
+                                                ),
+                                          ),
+                                        ),
                                         child: const Text('View'),
                                       ),
                                     ],
@@ -4633,9 +6279,20 @@ class _SalesHistoryPageState extends State<SalesHistoryPage> {
                                     children: [
                                       _buildHistoryData('Date', entry.date),
                                       _buildHistoryData('Type', entry.saleType),
-                                      _buildHistoryData('Customer', entry.customer.isEmpty ? 'N/A' : entry.customer),
-                                      _buildHistoryData('Total', '₹${entry.grandTotal.toStringAsFixed(2)}'),
-                                      _buildHistoryData('Balance', '₹${entry.balance.toStringAsFixed(2)}'),
+                                      _buildHistoryData(
+                                        'Customer',
+                                        entry.customer.isEmpty
+                                            ? 'N/A'
+                                            : entry.customer,
+                                      ),
+                                      _buildHistoryData(
+                                        'Total',
+                                        '₹${entry.grandTotal.toStringAsFixed(2)}',
+                                      ),
+                                      _buildHistoryData(
+                                        'Balance',
+                                        '₹${entry.balance.toStringAsFixed(2)}',
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -4655,13 +6312,26 @@ class _SalesHistoryPageState extends State<SalesHistoryPage> {
   Widget _buildHistoryData(String label, String value) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(color: kLightBlue, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: kLightBlue,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: kPrimaryBlue,
+            ),
+          ),
         ],
       ),
     );
@@ -4698,19 +6368,31 @@ class _SaleHistoryDetailsPageState extends State<SaleHistoryDetailsPage> {
   Widget _buildDetailRow(String label, String value) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: kPrimaryBlue,
+            ),
+          ),
         ],
       ),
     );
   }
-
-
 
   Widget _buildCheckboxTile(String label, String key) {
     return Row(
@@ -4718,12 +6400,16 @@ class _SaleHistoryDetailsPageState extends State<SaleHistoryDetailsPage> {
       children: [
         Checkbox(
           value: _selectedFields[key] ?? true,
-          onChanged: (val) => setState(() => _selectedFields[key] = val ?? true),
+          onChanged: (val) =>
+              setState(() => _selectedFields[key] = val ?? true),
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
         ),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 13, color: Colors.black87)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 13, color: Colors.black87),
+        ),
       ],
     );
   }
@@ -4747,10 +6433,25 @@ class _SaleHistoryDetailsPageState extends State<SaleHistoryDetailsPage> {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(widget.entry.billNo, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+                            child: Text(
+                              widget.entry.billNo,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: kPrimaryBlue,
+                              ),
+                            ),
                           ),
                           FilledButton(
-                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PrintPreviewPage(entry: widget.entry, selectedFields: _selectedFields))),
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PrintPreviewPage(
+                                  entry: widget.entry,
+                                  selectedFields: _selectedFields,
+                                ),
+                              ),
+                            ),
                             child: const Text('Print Preview'),
                           ),
                         ],
@@ -4762,7 +6463,12 @@ class _SaleHistoryDetailsPageState extends State<SaleHistoryDetailsPage> {
                         children: [
                           _buildDetailRow('Date', widget.entry.date),
                           _buildDetailRow('Type', widget.entry.saleType),
-                          _buildDetailRow('Customer', widget.entry.customer.isEmpty ? 'N/A' : widget.entry.customer),
+                          _buildDetailRow(
+                            'Customer',
+                            widget.entry.customer.isEmpty
+                                ? 'N/A'
+                                : widget.entry.customer,
+                          ),
                         ],
                       ),
                     ],
@@ -4776,7 +6482,14 @@ class _SaleHistoryDetailsPageState extends State<SaleHistoryDetailsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Items', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
+                      const Text(
+                        'Items',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: kPrimaryBlue,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       ...widget.entry.items.asMap().entries.map((entry) {
                         final item = entry.value;
@@ -4784,21 +6497,43 @@ class _SaleHistoryDetailsPageState extends State<SaleHistoryDetailsPage> {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: kLightBlue, borderRadius: BorderRadius.circular(12)),
+                          decoration: BoxDecoration(
+                            color: kLightBlue,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('${index + 1}. ${item.productCode} - ${item.productName}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
+                              Text(
+                                '${index + 1}. ${item.productCode} - ${item.productName}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: kPrimaryBlue,
+                                ),
+                              ),
                               const SizedBox(height: 8),
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 6,
                                 children: [
                                   _buildDetailRow('Qty', item.qty.toString()),
-                                  _buildDetailRow('MRP', '₹${item.mrp.toStringAsFixed(2)}'),
-                                  _buildDetailRow('Sale', '₹${item.salePrice.toStringAsFixed(2)}'),
-                                  _buildDetailRow('Disc', '${item.discountType}${item.discountValue.toStringAsFixed(2)}'),
-                                  _buildDetailRow('Total', '₹${item.itemTotal.toStringAsFixed(2)}'),
+                                  _buildDetailRow(
+                                    'MRP',
+                                    '₹${item.mrp.toStringAsFixed(2)}',
+                                  ),
+                                  _buildDetailRow(
+                                    'Sale',
+                                    '₹${item.salePrice.toStringAsFixed(2)}',
+                                  ),
+                                  _buildDetailRow(
+                                    'Disc',
+                                    '${item.discountType}${item.discountValue.toStringAsFixed(2)}',
+                                  ),
+                                  _buildDetailRow(
+                                    'Total',
+                                    '₹${item.itemTotal.toStringAsFixed(2)}',
+                                  ),
                                 ],
                               ),
                             ],
@@ -4809,24 +6544,66 @@ class _SaleHistoryDetailsPageState extends State<SaleHistoryDetailsPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Grand Total', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF475467))),
-                          Text('₹${widget.entry.grandTotal.toStringAsFixed(2)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+                          const Text(
+                            'Grand Total',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF475467),
+                            ),
+                          ),
+                          Text(
+                            '₹${widget.entry.grandTotal.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: kPrimaryBlue,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Paid Amount', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF475467))),
-                          Text('₹${widget.entry.paidAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+                          const Text(
+                            'Paid Amount',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF475467),
+                            ),
+                          ),
+                          Text(
+                            '₹${widget.entry.paidAmount.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: kPrimaryBlue,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Balance', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF475467))),
-                          Text('₹${widget.entry.balance.toStringAsFixed(2)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
+                          const Text(
+                            'Balance',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF475467),
+                            ),
+                          ),
+                          Text(
+                            '₹${widget.entry.balance.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: kPrimaryBlue,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -4840,7 +6617,14 @@ class _SaleHistoryDetailsPageState extends State<SaleHistoryDetailsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text('Printable Items', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
+                      const Text(
+                        'Printable Items',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: kPrimaryBlue,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 12,
@@ -4853,7 +6637,10 @@ class _SaleHistoryDetailsPageState extends State<SaleHistoryDetailsPage> {
                           _buildCheckboxTile('MRP', 'mrp'),
                           _buildCheckboxTile('Sale Price', 'salePrice'),
                           _buildCheckboxTile('Discount', 'discount'),
-                          _buildCheckboxTile('Total after discount', 'totalAfterDiscount'),
+                          _buildCheckboxTile(
+                            'Total after discount',
+                            'totalAfterDiscount',
+                          ),
                           _buildCheckboxTile('Grand Total', 'grandTotal'),
                         ],
                       ),
@@ -4873,9 +6660,14 @@ class PrintPreviewPage extends StatelessWidget {
   final SaleHistoryEntry entry;
   final Map<String, bool> selectedFields;
 
-  const PrintPreviewPage({required this.entry, required this.selectedFields, super.key});
+  const PrintPreviewPage({
+    required this.entry,
+    required this.selectedFields,
+    super.key,
+  });
 
-  String get _headerLabel => entry.saleType.toLowerCase() == 'estimate' ? 'ESTIMATE' : 'BILL';
+  String get _headerLabel =>
+      entry.saleType.toLowerCase() == 'estimate' ? 'ESTIMATE' : 'BILL';
 
   List<String> get _visibleColumns {
     final cols = <String>[];
@@ -4885,20 +6677,28 @@ class PrintPreviewPage extends StatelessWidget {
     if (selectedFields['mrp'] ?? true) cols.add('mrp');
     if (selectedFields['salePrice'] ?? true) cols.add('salePrice');
     if (selectedFields['discount'] ?? true) cols.add('discount');
-    if (selectedFields['totalAfterDiscount'] ?? true) cols.add('totalAfterDiscount');
+    if (selectedFields['totalAfterDiscount'] ?? true)
+      cols.add('totalAfterDiscount');
     return cols;
   }
 
   Map<int, TableColumnWidth> get _columnWidths {
     final widths = <int, TableColumnWidth>{};
     int index = 0;
-    if (selectedFields['sno'] ?? true) widths[index++] = const FixedColumnWidth(36);
-    if (selectedFields['product'] ?? true) widths[index++] = const FlexColumnWidth(3);
-    if (selectedFields['qty'] ?? true) widths[index++] = const FixedColumnWidth(48);
-    if (selectedFields['mrp'] ?? true) widths[index++] = const FixedColumnWidth(72);
-    if (selectedFields['salePrice'] ?? true) widths[index++] = const FixedColumnWidth(80);
-    if (selectedFields['discount'] ?? true) widths[index++] = const FixedColumnWidth(80);
-    if (selectedFields['totalAfterDiscount'] ?? true) widths[index++] = const FixedColumnWidth(90);
+    if (selectedFields['sno'] ?? true)
+      widths[index++] = const FixedColumnWidth(36);
+    if (selectedFields['product'] ?? true)
+      widths[index++] = const FlexColumnWidth(3);
+    if (selectedFields['qty'] ?? true)
+      widths[index++] = const FixedColumnWidth(48);
+    if (selectedFields['mrp'] ?? true)
+      widths[index++] = const FixedColumnWidth(72);
+    if (selectedFields['salePrice'] ?? true)
+      widths[index++] = const FixedColumnWidth(80);
+    if (selectedFields['discount'] ?? true)
+      widths[index++] = const FixedColumnWidth(80);
+    if (selectedFields['totalAfterDiscount'] ?? true)
+      widths[index++] = const FixedColumnWidth(90);
     return widths;
   }
 
@@ -4921,11 +6721,16 @@ class PrintPreviewPage extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(70, 32),
                         padding: const EdgeInsets.symmetric(horizontal: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         side: const BorderSide(color: kPrimaryBlue, width: 1),
                       ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Back', style: TextStyle(color: kPrimaryBlue, fontSize: 12)),
+                      child: const Text(
+                        'Back',
+                        style: TextStyle(color: kPrimaryBlue, fontSize: 12),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -4936,14 +6741,22 @@ class PrintPreviewPage extends StatelessWidget {
                         minimumSize: const Size(70, 32),
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         backgroundColor: kPrimaryBlue,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Print option ready.'), duration: Duration(milliseconds: 1200)),
+                          const SnackBar(
+                            content: Text('Print option ready.'),
+                            duration: Duration(milliseconds: 1200),
+                          ),
                         );
                       },
-                      child: const Text('Print', style: TextStyle(fontSize: 12)),
+                      child: const Text(
+                        'Print',
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ),
                   ),
                 ],
@@ -4964,7 +6777,11 @@ class PrintPreviewPage extends StatelessWidget {
                         Text(
                           _headerLabel,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 0.8),
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Row(
@@ -4972,19 +6789,30 @@ class PrintPreviewPage extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 entry.billNo,
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black87),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
+                                ),
                               ),
                             ),
                             Text(
                               entry.date,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black54),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black54,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Text(
                           "Customer: ${entry.customer.isEmpty ? 'N/A' : entry.customer}",
-                          style: const TextStyle(fontSize: 12, color: Colors.black87),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black87,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Expanded(
@@ -4993,46 +6821,98 @@ class PrintPreviewPage extends StatelessWidget {
                               width: double.infinity,
                               child: Table(
                                 border: TableBorder(
-                                  top: const BorderSide(color: Colors.black26, width: 0.8),
-                                  bottom: const BorderSide(color: Colors.black26, width: 0.8),
-                                  horizontalInside: const BorderSide(color: Colors.black12, width: 0.4),
-                                  verticalInside: const BorderSide(color: Colors.black12, width: 0.4),
+                                  top: const BorderSide(
+                                    color: Colors.black26,
+                                    width: 0.8,
+                                  ),
+                                  bottom: const BorderSide(
+                                    color: Colors.black26,
+                                    width: 0.8,
+                                  ),
+                                  horizontalInside: const BorderSide(
+                                    color: Colors.black12,
+                                    width: 0.4,
+                                  ),
+                                  verticalInside: const BorderSide(
+                                    color: Colors.black12,
+                                    width: 0.4,
+                                  ),
                                 ),
                                 columnWidths: _columnWidths,
                                 children: [
                                   TableRow(
-                                    decoration: BoxDecoration(color: Colors.grey.shade100),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                    ),
                                     children: _visibleColumns.map((col) {
                                       String label = '';
                                       if (col == 'sno') label = 'S.No';
-                                      if (col == 'product') label = 'Product Code / Name';
+                                      if (col == 'product')
+                                        label = 'Product Code / Name';
                                       if (col == 'qty') label = 'Qty';
                                       if (col == 'mrp') label = 'MRP';
-                                      if (col == 'salePrice') label = 'Sale Price';
+                                      if (col == 'salePrice')
+                                        label = 'Sale Price';
                                       if (col == 'discount') label = 'Discount';
-                                      if (col == 'totalAfterDiscount') label = 'Total';
+                                      if (col == 'totalAfterDiscount')
+                                        label = 'Total';
                                       return Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                        child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Colors.black87)),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 8,
+                                        ),
+                                        child: Text(
+                                          label,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 12,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
                                       );
                                     }).toList(),
                                   ),
-                                  for (final entryItem in entry.items.asMap().entries)
+                                  for (final entryItem
+                                      in entry.items.asMap().entries)
                                     TableRow(
-                                      decoration: BoxDecoration(color: entryItem.key.isEven ? Colors.white : Colors.grey.shade50),
+                                      decoration: BoxDecoration(
+                                        color: entryItem.key.isEven
+                                            ? Colors.white
+                                            : Colors.grey.shade50,
+                                      ),
                                       children: _visibleColumns.map((col) {
                                         final item = entryItem.value;
                                         String value = '';
-                                        if (col == 'sno') value = '${entryItem.key + 1}';
-                                        if (col == 'product') value = '${item.productCode} ${item.productName}';
+                                        if (col == 'sno')
+                                          value = '${entryItem.key + 1}';
+                                        if (col == 'product')
+                                          value =
+                                              '${item.productCode} ${item.productName}';
                                         if (col == 'qty') value = '${item.qty}';
-                                        if (col == 'mrp') value = '₹${item.mrp.toStringAsFixed(2)}';
-                                        if (col == 'salePrice') value = '₹${item.salePrice.toStringAsFixed(2)}';
-                                        if (col == 'discount') value = '${item.discountType}${item.discountValue.toStringAsFixed(2)}';
-                                        if (col == 'totalAfterDiscount') value = '₹${item.itemTotal.toStringAsFixed(2)}';
+                                        if (col == 'mrp')
+                                          value =
+                                              '₹${item.mrp.toStringAsFixed(2)}';
+                                        if (col == 'salePrice')
+                                          value =
+                                              '₹${item.salePrice.toStringAsFixed(2)}';
+                                        if (col == 'discount')
+                                          value =
+                                              '${item.discountType}${item.discountValue.toStringAsFixed(2)}';
+                                        if (col == 'totalAfterDiscount')
+                                          value =
+                                              '₹${item.itemTotal.toStringAsFixed(2)}';
                                         return Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                          child: Text(value, style: const TextStyle(fontSize: 12, color: Colors.black87)),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 6,
+                                          ),
+                                          child: Text(
+                                            value,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
                                         );
                                       }).toList(),
                                     ),
@@ -5048,7 +6928,11 @@ class PrintPreviewPage extends StatelessWidget {
                             alignment: Alignment.centerRight,
                             child: Text(
                               'Grand Total: ₹${entry.grandTotal.toStringAsFixed(2)}',
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.black87),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.black87,
+                              ),
                             ),
                           ),
                       ],
@@ -5116,8 +7000,15 @@ class _NewSalePageState extends State<NewSalePage> {
 
     final parties = decodedParties
         .whereType<Map>()
-        .map((party) => party.map((key, value) => MapEntry(key.toString(), value?.toString() ?? '')))
-        .where((party) => party['partyType'] == 'Customer' || party['partyType'] == 'Both')
+        .map(
+          (party) => party.map(
+            (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+          ),
+        )
+        .where(
+          (party) =>
+              party['partyType'] == 'Customer' || party['partyType'] == 'Both',
+        )
         .toList();
 
     if (!mounted) return;
@@ -5136,11 +7027,13 @@ class _NewSalePageState extends State<NewSalePage> {
       } else {
         _filteredCustomerParties
           ..clear()
-          ..addAll(_customerParties.where((party) {
-            final partyName = (party['partyName'] ?? '').toLowerCase();
-            final mobile = (party['mobileNumber'] ?? '').toLowerCase();
-            return partyName.contains(text) || mobile.contains(text);
-          }));
+          ..addAll(
+            _customerParties.where((party) {
+              final partyName = (party['partyName'] ?? '').toLowerCase();
+              final mobile = (party['mobileNumber'] ?? '').toLowerCase();
+              return partyName.contains(text) || mobile.contains(text);
+            }),
+          );
       }
     });
   }
@@ -5158,7 +7051,9 @@ class _NewSalePageState extends State<NewSalePage> {
     final productMap = <String, ProductMaster>{};
 
     for (final entry in saved) {
-      final product = ProductMaster.fromJson(jsonDecode(entry) as Map<String, dynamic>);
+      final product = ProductMaster.fromJson(
+        jsonDecode(entry) as Map<String, dynamic>,
+      );
       final key = product.productCode.trim().toLowerCase();
       if (key.isEmpty) continue;
       productMap[key] = product;
@@ -5194,7 +7089,9 @@ class _NewSalePageState extends State<NewSalePage> {
 
   void _selectProduct(ProductMaster product) {
     final key = product.productCode.trim().toLowerCase();
-    final existingIndex = _saleItems.indexWhere((item) => item.product.productCode.trim().toLowerCase() == key);
+    final existingIndex = _saleItems.indexWhere(
+      (item) => item.product.productCode.trim().toLowerCase() == key,
+    );
     setState(() {
       if (existingIndex >= 0) {
         final entry = _saleItems[existingIndex];
@@ -5234,12 +7131,14 @@ class _NewSalePageState extends State<NewSalePage> {
   }
 
   String _formatBillNo(int value) => 'BILL-${value.toString().padLeft(4, "0")}';
-  String _formatEstimateNo(int value) => 'EST-${value.toString().padLeft(4, "0")}';
+  String _formatEstimateNo(int value) =>
+      'EST-${value.toString().padLeft(4, "0")}';
 
   bool get _isEstimate => _saleType == 'Estimate';
   String get _numberLabel => _isEstimate ? 'Estimate No' : 'Bill No';
   String get _saveButtonLabel => _isEstimate ? 'Save Estimate' : 'Save Sale';
-  String get _successMessage => _isEstimate ? 'Estimate saved successfully' : 'Sale saved successfully';
+  String get _successMessage =>
+      _isEstimate ? 'Estimate saved successfully' : 'Sale saved successfully';
 
   String _nextNumberForType(String type) {
     if (type == 'Estimate') {
@@ -5300,7 +7199,11 @@ class _NewSalePageState extends State<NewSalePage> {
 
     final savedLots = prefs.getStringList('purchase_stock_lot_list') ?? [];
     final lots = savedLots
-        .map((entry) => PurchaseStockLot.fromJson(jsonDecode(entry) as Map<String, dynamic>))
+        .map(
+          (entry) => PurchaseStockLot.fromJson(
+            jsonDecode(entry) as Map<String, dynamic>,
+          ),
+        )
         .toList();
 
     final saleQtyByCode = <String, int>{};
@@ -5316,7 +7219,9 @@ class _NewSalePageState extends State<NewSalePage> {
         final code = lot.productCode.trim().toLowerCase();
         final remainingSaleQty = saleQtyByCode[code] ?? 0;
         if (remainingSaleQty > 0 && lot.remainingQty > 0) {
-          final reduction = remainingSaleQty > lot.remainingQty ? lot.remainingQty : remainingSaleQty;
+          final reduction = remainingSaleQty > lot.remainingQty
+              ? lot.remainingQty
+              : remainingSaleQty;
           saleQtyByCode[code] = remainingSaleQty - reduction;
           updatedLots.add(
             PurchaseStockLot(
@@ -5337,7 +7242,10 @@ class _NewSalePageState extends State<NewSalePage> {
         }
       }
 
-      await prefs.setStringList('purchase_stock_lot_list', updatedLots.map((lot) => jsonEncode(lot.toJson())).toList());
+      await prefs.setStringList(
+        'purchase_stock_lot_list',
+        updatedLots.map((lot) => jsonEncode(lot.toJson())).toList(),
+      );
 
       final stockByProduct = <String, int>{};
       for (final lot in updatedLots) {
@@ -5348,24 +7256,32 @@ class _NewSalePageState extends State<NewSalePage> {
 
       final savedProducts = prefs.getStringList('product_master_list') ?? [];
       final updatedProducts = savedProducts
-          .map((entry) => ProductMaster.fromJson(jsonDecode(entry) as Map<String, dynamic>))
+          .map(
+            (entry) => ProductMaster.fromJson(
+              jsonDecode(entry) as Map<String, dynamic>,
+            ),
+          )
           .map((product) {
-        final code = product.productCode.trim().toLowerCase();
-        final currentStock = stockByProduct[code] ?? 0;
-        return ProductMaster(
-          productCode: product.productCode,
-          productName: product.productName,
-          category: product.category,
-          unit: product.unit,
-          purchasePrice: product.purchasePrice,
-          mrpPrice: product.mrpPrice,
-          defaultSalePrice: product.defaultSalePrice,
-          minimumStockAlert: product.minimumStockAlert,
-          currentStock: currentStock,
-        );
-      }).toList();
+            final code = product.productCode.trim().toLowerCase();
+            final currentStock = stockByProduct[code] ?? 0;
+            return ProductMaster(
+              productCode: product.productCode,
+              productName: product.productName,
+              category: product.category,
+              unit: product.unit,
+              purchasePrice: product.purchasePrice,
+              mrpPrice: product.mrpPrice,
+              defaultSalePrice: product.defaultSalePrice,
+              minimumStockAlert: product.minimumStockAlert,
+              currentStock: currentStock,
+            );
+          })
+          .toList();
 
-      await prefs.setStringList('product_master_list', updatedProducts.map((product) => jsonEncode(product.toJson())).toList());
+      await prefs.setStringList(
+        'product_master_list',
+        updatedProducts.map((product) => jsonEncode(product.toJson())).toList(),
+      );
     }
   }
 
@@ -5426,10 +7342,14 @@ class _NewSalePageState extends State<NewSalePage> {
       final partyName = (partyMap['partyName'] ?? '').toString().trim();
       final partyType = (partyMap['partyType'] ?? '').toString();
       final isCustomerParty = partyType == 'Customer' || partyType == 'Both';
-      if (updated || !isCustomerParty || partyName != customerName) return partyMap;
+      if (updated || !isCustomerParty || partyName != customerName)
+        return partyMap;
 
-      final existingBalance = double.tryParse((partyMap['openingBalance'] ?? '0').toString()) ?? 0.0;
-      partyMap['openingBalance'] = (existingBalance + saleBalance).toStringAsFixed(2);
+      final existingBalance =
+          double.tryParse((partyMap['openingBalance'] ?? '0').toString()) ??
+          0.0;
+      partyMap['openingBalance'] = (existingBalance + saleBalance)
+          .toStringAsFixed(2);
       partyMap['balanceType'] = 'Receivable';
       updated = true;
       return partyMap;
@@ -5446,18 +7366,26 @@ class _NewSalePageState extends State<NewSalePage> {
       SnackBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        content: Center(child: Text(message, style: const TextStyle(color: kPrimaryBlue, fontSize: 13, fontWeight: FontWeight.w600))),
+        content: Center(
+          child: Text(
+            message,
+            style: const TextStyle(
+              color: kPrimaryBlue,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
         behavior: SnackBarBehavior.floating,
         width: 320,
         duration: const Duration(seconds: 2),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
-  double get _grandTotal => _saleItems.fold(0.0, (sum, item) => sum + item.total);
+  double get _grandTotal =>
+      _saleItems.fold(0.0, (sum, item) => sum + item.total);
   double get _balance {
     if (_saleItems.isEmpty) return 0.0;
     final paid = double.tryParse(_paidController.text) ?? 0.0;
@@ -5480,66 +7408,115 @@ class _NewSalePageState extends State<NewSalePage> {
       keyboardType: keyboardType,
       readOnly: readOnly,
       onChanged: onChanged ?? (_) => setState(() {}),
-      validator: validator ?? (value) {
-        if (!readOnly && controller == _customerController && (value == null || value.trim().isEmpty)) {
-          return 'Customer name is required';
-        }
-        return null;
-      },
+      validator:
+          validator ??
+          (value) {
+            if (!readOnly &&
+                controller == _customerController &&
+                (value == null || value.trim().isEmpty)) {
+              return 'Customer name is required';
+            }
+            return null;
+          },
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         filled: true,
         fillColor: Colors.white,
-        
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade300)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+      ),
+    );
+  }
+
+  Widget _fixedField({
+    required double width,
+    required String label,
+    TextEditingController? controller,
+    String? hint,
+    TextInputType keyboardType = TextInputType.text,
+    bool readOnly = false,
+    void Function(String)? onChanged,
+    String? Function(String?)? validator,
+  }) {
+    return SizedBox(
+      width: width,
+      height: 58,
+      child: _buildField(
+        label: label,
+        controller: controller,
+        hint: hint,
+        keyboardType: keyboardType,
+        readOnly: readOnly,
+        onChanged: onChanged,
+        validator: validator,
       ),
     );
   }
 
   Widget _buildCustomerPartySuggestions() {
     return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(maxHeight: 220),
+      width: 420,
+      height: 220,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: SingleChildScrollView(
         child: Column(
           children: _filteredCustomerParties.map((party) {
-          final partyName = party['partyName'] ?? '';
-          final mobile = party['mobileNumber'] ?? '';
-          final category = party['category'] ?? '';
-          return InkWell(
-            onTap: () => _selectCustomerParty(party),
-            child: SizedBox(
-              height: 52,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        partyName,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kPrimaryBlue),
-                        overflow: TextOverflow.ellipsis,
+            final partyName = party['partyName'] ?? '';
+            final mobile = party['mobileNumber'] ?? '';
+            final category = party['category'] ?? '';
+            return InkWell(
+              onTap: () => _selectCustomerParty(party),
+              child: SizedBox(
+                height: 52,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 220,
+                        child: Text(
+                          partyName,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: kPrimaryBlue,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        [mobile, category].where((value) => value.isNotEmpty).join(' | '),
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                        overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 164,
+                        child: Text(
+                          [
+                            mobile,
+                            category,
+                          ].where((value) => value.isNotEmpty).join(' | '),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF64748B),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
+            );
           }).toList(),
         ),
       ),
@@ -5547,98 +7524,81 @@ class _NewSalePageState extends State<NewSalePage> {
   }
 
   Widget _buildSaleItemRow(int index, SaleEntry item) {
-    final stockWarning = item.qty > item.product.currentStock;
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 4),
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return SizedBox(
+      width: 1210,
+      height: 38,
+      child: Row(
         children: [
-          
-          const SizedBox(height: 0),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              SizedBox(
-  width: 90,
-  child: Text(
-    '${item.product.productCode} - ${item.product.productName}',
-    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kPrimaryBlue),
-    overflow: TextOverflow.ellipsis,
-    maxLines: 1,
-  ),
-),
-  
-  
-SizedBox(
-  width: 65,
-  child: Text(
-    'Stock: ${item.product.currentStock}',
-    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-    overflow: TextOverflow.ellipsis,
-    maxLines: 1,
-  ),
-),
-
-              _buildCaptionValue('Purchase', '₹${item.product.purchasePrice.toStringAsFixed(2)}'),
-              _buildCaptionValue('MRP', '₹${item.product.mrpPrice.toStringAsFixed(2)}'),
-              _buildQtyControl(item),
-               SizedBox(width: 120, child: _buildNumericField('Sale Price', item.salePriceController, () => setState(() {}))),
-                // Discount type + value
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: item.discountType,
-                        items: const [DropdownMenuItem(value: '₹', child: Text('₹')), DropdownMenuItem(value: '%', child: Text('%'))],
-                        onChanged: (v) => setState(() {
-                          item.discountType = v ?? '₹';
-                        }),
-                        style: const TextStyle(fontSize: 13, color: kPrimaryBlue, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 70,
-                      child: TextFormField(
-                        controller: item.discountController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        onChanged: (_) => setState(() {}),
-                        decoration: const InputDecoration(isDense: true, border: InputBorder.none, hintText: '0'),
-                        textAlign: TextAlign.right,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _buildCaptionValue('Total', '₹${item.total.toStringAsFixed(2)}'),
-              IconButton(
-                onPressed: () => _deleteSaleItem(index),
-                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                tooltip: 'Delete',
-              ),
-            ],
+          _saleTableTextCell(
+            '${index + 1}',
+            width: 44,
+            textAlign: TextAlign.center,
           ),
-          if (stockWarning)
-            const Padding(
-              padding: EdgeInsets.only(top: 6),
+          const SizedBox(width: 6),
+          _saleTableTextCell(
+            '${item.product.productCode} - ${item.product.productName}',
+            width: 300,
+            productStyle: true,
+          ),
+          const SizedBox(width: 6),
+          _saleTableTextCell(
+            '₹${item.product.purchasePrice.toStringAsFixed(2)}',
+            width: 90,
+          ),
+          const SizedBox(width: 6),
+          _saleTableTextCell(
+            '₹${item.product.mrpPrice.toStringAsFixed(2)}',
+            width: 90,
+          ),
+          const SizedBox(width: 6),
+          _buildQtyControl(item),
+          const SizedBox(width: 6),
+          _buildNumericField(
+            width: 110,
+            controller: item.salePriceController,
+            onChanged: () => setState(() {}),
+          ),
+          const SizedBox(width: 6),
+          _buildDiscountTypeField(item),
+          const SizedBox(width: 6),
+          _buildDiscountValueField(item),
+          const SizedBox(width: 6),
+          _saleTableTextCell('0.00', width: 70),
+          const SizedBox(width: 6),
+          _saleTableTextCell('₹${item.total.toStringAsFixed(2)}', width: 110),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 75,
+            height: 38,
+            child: Align(
+              alignment: Alignment.centerLeft,
               child: Text(
-                'Quantity is more than available stock',
-                style: TextStyle(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.w700),
+                'Stock: ${item.product.currentStock}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF64748B),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+          ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 70,
+            height: 38,
+            child: IconButton(
+              onPressed: () => _deleteSaleItem(index),
+              icon: const Icon(
+                Icons.delete_outline,
+                color: Colors.redAccent,
+                size: 18,
+              ),
+              tooltip: 'Delete',
+              padding: EdgeInsets.zero,
+            ),
+          ),
         ],
       ),
     );
@@ -5646,76 +7606,254 @@ SizedBox(
 
   Widget _buildQtyControl(SaleEntry item) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      width: 70,
+      height: 38,
       decoration: BoxDecoration(
-        color: kLightBlue,
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            onPressed: item.qty > 1 ? () => _setQuantity(item, item.qty - 1) : null,
-            icon: const Icon(Icons.remove, size: 18),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+          SizedBox(
+            width: 20,
+            height: 38,
+            child: IconButton(
+              onPressed: item.qty > 1
+                  ? () => _setQuantity(item, item.qty - 1)
+                  : null,
+              icon: const Icon(Icons.remove, size: 12),
+              padding: EdgeInsets.zero,
+            ),
           ),
           SizedBox(
-            width: 38,
+            width: 30,
+            height: 38,
             child: TextFormField(
               controller: item.qtyController,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: kPrimaryBlue, fontWeight: FontWeight.w700),
-              decoration: const InputDecoration(border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 6)),
+              style: const TextStyle(
+                fontSize: 13,
+                color: kPrimaryBlue,
+                fontWeight: FontWeight.w700,
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(vertical: 8),
+              ),
               onChanged: (value) {
                 final quantity = int.tryParse(value) ?? 1;
                 _setQuantity(item, quantity);
               },
             ),
           ),
-          IconButton(
-            onPressed: () => _setQuantity(item, item.qty + 1),
-            icon: const Icon(Icons.add, size: 18),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+          SizedBox(
+            width: 20,
+            height: 38,
+            child: IconButton(
+              onPressed: () => _setQuantity(item, item.qty + 1),
+              icon: const Icon(Icons.add, size: 12),
+              padding: EdgeInsets.zero,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCaptionValue(String caption, String value) {
+  Widget _buildNumericField({
+    required double width,
+    required TextEditingController controller,
+    required VoidCallback onChanged,
+  }) {
+    return SizedBox(
+      width: width,
+      height: 38,
+      child: TextFormField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        textAlign: TextAlign.right,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: kPrimaryBlue,
+        ),
+        onChanged: (_) => onChanged(),
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 9,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiscountTypeField(SaleEntry item) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(color: kLightBlue, borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      width: 50,
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
         children: [
-          Text(caption, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
-          const SizedBox(height: 2),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
+          SizedBox(
+            width: 42,
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: item.discountType,
+                isDense: true,
+                items: const [
+                  DropdownMenuItem(value: '₹', child: Text('₹')),
+                  DropdownMenuItem(value: '%', child: Text('%')),
+                ],
+                onChanged: (v) => setState(() {
+                  item.discountType = v ?? '₹';
+                }),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: kPrimaryBlue,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildNumericField(String label, TextEditingController controller, VoidCallback onChanged) {
-    return SizedBox(
-      width: 100,
+  Widget _buildDiscountValueField(SaleEntry item) {
+    return Container(
+      width: 65,
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
       child: TextFormField(
-        controller: controller,
+        controller: item.discountController,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        onChanged: (_) => onChanged(),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(fontSize: 10),
+        onChanged: (_) => setState(() {}),
+        decoration: const InputDecoration(
           isDense: true,
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+          border: InputBorder.none,
+          hintText: '0',
+          contentPadding: EdgeInsets.symmetric(vertical: 8),
         ),
+        textAlign: TextAlign.right,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: kPrimaryBlue,
+        ),
+      ),
+    );
+  }
+
+  Widget _saleTableHeaderCell(String label, {required double width}) {
+    return Container(
+      width: width,
+      height: 34,
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: kPrimaryBlue,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _saleTableTextCell(
+    String value, {
+    required double width,
+    bool productStyle = false,
+    TextAlign textAlign = TextAlign.left,
+  }) {
+    return Container(
+      width: width,
+      height: 38,
+      alignment: textAlign == TextAlign.center
+          ? Alignment.center
+          : Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Text(
+        value,
+        textAlign: textAlign,
+        style: TextStyle(
+          fontSize: productStyle ? 14 : 13,
+          fontWeight: productStyle ? FontWeight.w600 : FontWeight.w600,
+          color: productStyle ? kPrimaryBlue : const Color(0xFF334155),
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _saleTotalDisplayBox(
+    String label,
+    String value, {
+    required double width,
+  }) {
+    return Container(
+      width: width,
+      height: 96,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: kPrimaryBlue,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -5744,270 +7882,7 @@ SizedBox(
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final maxWidth = width > 1000 ? 980.0 : double.infinity;
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Card(
-                        color: kLightBlue,
-                        child: Padding(
-                          padding: const EdgeInsets.all(4),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Sale Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Expanded(child: _buildField(label: 'Date', controller: _dateController)),
-                                  const SizedBox(width: 10),
-                                  Expanded(child: _buildField(label: _numberLabel, controller: _billController)),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              _buildField(
-                                label: 'Customer / Party Search',
-                                controller: _customerController,
-                                hint: 'Search customer or party',
-                                onChanged: _updateCustomerPartySuggestions,
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Customer name is required';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              if (_filteredCustomerParties.isNotEmpty)
-                                const SizedBox(height: 8),
-                              if (_filteredCustomerParties.isNotEmpty)
-                                _buildCustomerPartySuggestions(),
-                              const SizedBox(height: 12),
-                              DropdownButtonFormField<String>(
-                                initialValue: _saleType,
-                                decoration: InputDecoration(
-                                  labelText: 'Sale Type',
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade300)),
-                                ),
-                                items: const [
-                                  DropdownMenuItem(value: 'Cash', child: Text('Cash')),
-                                  DropdownMenuItem(value: 'Credit', child: Text('Credit')),
-                                  DropdownMenuItem(value: 'Estimate', child: Text('Estimate')),
-                                  DropdownMenuItem(value: 'Order', child: Text('Order')),
-                                ],
-                                onChanged: (value) => setState(() {
-                                  _saleType = value ?? 'Cash';
-                                  _billNo = _nextNumberForType(_saleType);
-                                  _billController.text = _billNo;
-                                }),
-                              ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _searchController,
-                                decoration: InputDecoration(
-                                  labelText: 'Search product code or product name',
-                                  hintText: 'Search product code or product name',
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  suffixIcon: _searchQuery.isNotEmpty
-                                      ? IconButton(
-                                          icon: const Icon(Icons.clear),
-                                          onPressed: () {
-                                            _searchController.clear();
-                                          },
-                                        )
-                                      : null,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.grey.shade300)),
-                                ),
-                                onChanged: _updateSearch,
-                              ),
-                              if (_searchQuery.isNotEmpty)
-                                const SizedBox(height: 12),
-                              if (_searchQuery.isNotEmpty)
-                                Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: Colors.grey.shade300),
-                                  ),
-                                  child: _filteredProducts.isEmpty
-                                      ? const Padding(
-                                          padding: EdgeInsets.all(12),
-                                          child: Text('No products match your search.', style: TextStyle(color: Color(0xFF64748B))),
-                                        )
-                                      : Column(
-                                          children: _filteredProducts.map((product) {
-                                            return InkWell(
-                                              onTap: () => _selectProduct(product),
-                                              child: Padding(
-                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Row(
-                                                      children: [
-                                                        Expanded(
-                                                          child: Text(
-                                                            '${product.productCode} - ${product.productName}',
-                                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kPrimaryBlue),
-                                                            overflow: TextOverflow.ellipsis,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(width: 8),
-                                                        Text('Stock: ${product.currentStock}', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 6),
-                                                    Text(
-                                                      'Purchase: ₹${product.purchasePrice.toStringAsFixed(2)} | MRP: ₹${product.mrpPrice.toStringAsFixed(2)} | Sale: ₹${product.defaultSalePrice.toStringAsFixed(2)}',
-                                                      style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Card(
-                        color: kLightBlue,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Sale Items', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
-                              const SizedBox(height: 4),
-                              if (_saleItems.isEmpty)
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 4),
-                                  child: Center(child: Text('Add products to start the sale.', style: TextStyle(color: Color(0xFF64748B)))),
-                                )
-                              else
-                                Column(
-                                  children: List.generate(_saleItems.length, (index) => _buildSaleItemRow(index, _saleItems[index])),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Card(
-                        color: kLightBlue,
-                        child: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Totals', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
-                              const SizedBox(height: 8),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    width: 280,
-                                    height: 58,
-                                    child: TextFormField(
-                                      controller: _paidController,
-                                      keyboardType: TextInputType.number,
-                                      onChanged: (_) => setState(() {}),
-                                      decoration: InputDecoration(
-                                        hintText: 'Paid Amount',
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(14),
-                                          borderSide: BorderSide(color: Colors.grey.shade300),
-                                        ),
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  SizedBox(
-                                    width: 280,
-                                    height: 58,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.grey.shade300)),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          const Text('Balance', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                                          const SizedBox(height: 4),
-                                          Text('₹${_balance.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kPrimaryBlue)),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('Grand Total', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF475467))),
-                                  Text('₹${_grandTotal.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: kPrimaryBlue)),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: FilledButton(
-                          onPressed: () async {
-                            if (_saleItems.isEmpty) {
-                              _showSaleSnackBar('Please add at least one product');
-                              return;
-                            }
-                            if (_saleItems.any((item) => item.qty > item.product.currentStock)) {
-                              _showSaleSnackBar('Quantity is more than available stock');
-                              return;
-                            }
-                            await _saveSaleAndPrepareNext();
-                            _showSaleSnackBar(_successMessage);
-                          },
-                          style: FilledButton.styleFrom(
-                            backgroundColor: kPrimaryBlue,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ),
-                          child: Text(_saveButtonLabel, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+      body: const SizedBox.shrink(),
     );
   }
 }

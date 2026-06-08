@@ -5297,17 +5297,61 @@ class _NewSalePageState extends State<NewSalePage> {
 
   Future<void> _decrementStockForSale() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getStringList('product_master_list') ?? [];
-    final products = saved
-        .map((entry) => ProductMaster.fromJson(jsonDecode(entry) as Map<String, dynamic>))
+
+    final savedLots = prefs.getStringList('purchase_stock_lot_list') ?? [];
+    final lots = savedLots
+        .map((entry) => PurchaseStockLot.fromJson(jsonDecode(entry) as Map<String, dynamic>))
         .toList();
 
-    final updatedProducts = products.map((product) {
-      final saleQty = _saleItems
-          .where((item) => item.product.productCode.trim().toLowerCase() == product.productCode.trim().toLowerCase())
-          .fold<int>(0, (sum, item) => sum + item.qty);
+    final saleQtyByCode = <String, int>{};
+    for (final item in _saleItems) {
+      final code = item.product.productCode.trim().toLowerCase();
+      if (code.isEmpty) continue;
+      saleQtyByCode[code] = (saleQtyByCode[code] ?? 0) + item.qty;
+    }
 
-      if (saleQty > 0) {
+    if (saleQtyByCode.isNotEmpty) {
+      final updatedLots = <PurchaseStockLot>[];
+      for (final lot in lots) {
+        final code = lot.productCode.trim().toLowerCase();
+        final remainingSaleQty = saleQtyByCode[code] ?? 0;
+        if (remainingSaleQty > 0 && lot.remainingQty > 0) {
+          final reduction = remainingSaleQty > lot.remainingQty ? lot.remainingQty : remainingSaleQty;
+          saleQtyByCode[code] = remainingSaleQty - reduction;
+          updatedLots.add(
+            PurchaseStockLot(
+              lotNo: lot.lotNo,
+              purchaseNo: lot.purchaseNo,
+              purchaseDate: lot.purchaseDate,
+              supplierName: lot.supplierName,
+              productCode: lot.productCode,
+              productName: lot.productName,
+              unit: lot.unit,
+              qty: lot.qty,
+              remainingQty: lot.remainingQty - reduction,
+              purchaseRate: lot.purchaseRate,
+            ),
+          );
+        } else {
+          updatedLots.add(lot);
+        }
+      }
+
+      await prefs.setStringList('purchase_stock_lot_list', updatedLots.map((lot) => jsonEncode(lot.toJson())).toList());
+
+      final stockByProduct = <String, int>{};
+      for (final lot in updatedLots) {
+        final code = lot.productCode.trim().toLowerCase();
+        if (code.isEmpty) continue;
+        stockByProduct[code] = (stockByProduct[code] ?? 0) + lot.remainingQty;
+      }
+
+      final savedProducts = prefs.getStringList('product_master_list') ?? [];
+      final updatedProducts = savedProducts
+          .map((entry) => ProductMaster.fromJson(jsonDecode(entry) as Map<String, dynamic>))
+          .map((product) {
+        final code = product.productCode.trim().toLowerCase();
+        final currentStock = stockByProduct[code] ?? 0;
         return ProductMaster(
           productCode: product.productCode,
           productName: product.productName,
@@ -5317,13 +5361,12 @@ class _NewSalePageState extends State<NewSalePage> {
           mrpPrice: product.mrpPrice,
           defaultSalePrice: product.defaultSalePrice,
           minimumStockAlert: product.minimumStockAlert,
-          currentStock: product.currentStock - saleQty,
+          currentStock: currentStock,
         );
-      }
-      return product;
-    }).toList();
+      }).toList();
 
-    await prefs.setStringList('product_master_list', updatedProducts.map((product) => jsonEncode(product.toJson())).toList());
+      await prefs.setStringList('product_master_list', updatedProducts.map((product) => jsonEncode(product.toJson())).toList());
+    }
   }
 
   Future<void> _saveHistoryEntry() async {

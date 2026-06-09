@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element, unused_field, prefer_final_fields, curly_braces_in_flow_control_structures, deprecated_member_use
 import 'dart:convert';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
@@ -6966,7 +6967,7 @@ class _NewSalePageState extends State<NewSalePage> {
   String _searchQuery = '';
   int _lastBillNumber = 0;
   int _lastEstimateNumber = 0;
-  String _billNo = 'BILL-0001';
+  String _billNo = '';
   String _saleDate = '';
   final List<ProductMaster> _availableProducts = [];
   final List<ProductMaster> _filteredProducts = [];
@@ -7133,6 +7134,8 @@ class _NewSalePageState extends State<NewSalePage> {
   String _formatBillNo(int value) => 'BILL-${value.toString().padLeft(4, "0")}';
   String _formatEstimateNo(int value) =>
       'EST-${value.toString().padLeft(4, "0")}';
+  String _formatOrderNo(int value) =>
+      'ORD-${value.toString().padLeft(4, "0")}';
 
   bool get _isEstimate => _saleType == 'Estimate';
   String get _numberLabel => _isEstimate ? 'Estimate No' : 'Bill No';
@@ -7143,6 +7146,9 @@ class _NewSalePageState extends State<NewSalePage> {
   String _nextNumberForType(String type) {
     if (type == 'Estimate') {
       return _formatEstimateNo(_lastEstimateNumber + 1);
+    }
+    if (type == 'Order') {
+      return _formatOrderNo(_lastBillNumber + 1);
     }
     return _formatBillNo(_lastBillNumber + 1);
   }
@@ -7476,7 +7482,10 @@ class _NewSalePageState extends State<NewSalePage> {
             final mobile = party['mobileNumber'] ?? '';
             final category = party['category'] ?? '';
             return InkWell(
-              onTap: () => _selectCustomerParty(party),
+              onTap: () {
+                _selectCustomerParty(party);
+                FocusScope.of(context).unfocus();
+              },
               child: SizedBox(
                 height: 52,
                 child: Padding(
@@ -7523,80 +7532,130 @@ class _NewSalePageState extends State<NewSalePage> {
     );
   }
 
+  Widget _buildProductSuggestions() {
+    return Container(
+      width: 1430,
+      constraints: const BoxConstraints(maxHeight: 180),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          children: _filteredProducts.map((product) {
+            return InkWell(
+              onTap: () {
+                _selectProduct(product);
+                FocusScope.of(context).unfocus();
+              },
+              child: SizedBox(
+                height: 48,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 1180,
+                        child: Text(
+                          '${product.productCode} - ${product.productName}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: kPrimaryBlue,
+                          ),
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 200,
+                        child: Text(
+                          'Stock: ${product.currentStock}',
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF64748B),
+                          ),
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSaleItemRow(int index, SaleEntry item) {
     return SizedBox(
-      width: 1210,
+      width: 1436,
       height: 38,
       child: Row(
         children: [
           _saleTableTextCell(
             '${index + 1}',
-            width: 44,
+            width: 64,
             textAlign: TextAlign.center,
           ),
           const SizedBox(width: 6),
           _saleTableTextCell(
             '${item.product.productCode} - ${item.product.productName}',
-            width: 300,
+            width: 352,
             productStyle: true,
           ),
           const SizedBox(width: 6),
           _saleTableTextCell(
             '₹${item.product.purchasePrice.toStringAsFixed(2)}',
-            width: 90,
+            width: 112,
           ),
           const SizedBox(width: 6),
           _saleTableTextCell(
             '₹${item.product.mrpPrice.toStringAsFixed(2)}',
-            width: 90,
+            width: 112,
           ),
           const SizedBox(width: 6),
           _buildQtyControl(item),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           _buildNumericField(
-            width: 110,
+            width: 128,
             controller: item.salePriceController,
             onChanged: () => setState(() {}),
           ),
           const SizedBox(width: 6),
           _buildDiscountTypeField(item),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           _buildDiscountValueField(item),
           const SizedBox(width: 6),
-          _saleTableTextCell('0.00', width: 70),
+          _saleTableTextCell('Inc', width: 88),
           const SizedBox(width: 6),
-          _saleTableTextCell('₹${item.total.toStringAsFixed(2)}', width: 110),
+          _saleTableTextCell('0.00', width: 64),
           const SizedBox(width: 6),
-          SizedBox(
-            width: 75,
-            height: 38,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Stock: ${item.product.currentStock}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+          _saleTableTextCell(
+            '₹${item.total.toStringAsFixed(2)}',
+            width: 150,
           ),
           const SizedBox(width: 6),
           SizedBox(
-            width: 70,
-            height: 38,
-            child: IconButton(
-              onPressed: () => _deleteSaleItem(index),
-              icon: const Icon(
-                Icons.delete_outline,
-                color: Colors.redAccent,
-                size: 18,
+            width: 36,
+            height: 46,
+            child: Center(
+              child: GestureDetector(
+                onTap: () => _deleteSaleItem(index),
+                child: const Icon(
+                  Icons.delete,
+                  color: Colors.red,
+                  size: 18,
+                ),
               ),
-              tooltip: 'Delete',
-              padding: EdgeInsets.zero,
             ),
           ),
         ],
@@ -7606,7 +7665,7 @@ class _NewSalePageState extends State<NewSalePage> {
 
   Widget _buildQtyControl(SaleEntry item) {
     return Container(
-      width: 70,
+      width: 82,
       height: 38,
       decoration: BoxDecoration(
         color: Colors.white,
@@ -7614,34 +7673,30 @@ class _NewSalePageState extends State<NewSalePage> {
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 20,
-            height: 38,
-            child: IconButton(
-              onPressed: item.qty > 1
-                  ? () => _setQuantity(item, item.qty - 1)
-                  : null,
-              icon: const Icon(Icons.remove, size: 12),
-              padding: EdgeInsets.zero,
-            ),
+          GestureDetector(
+            onTap: item.qty > 1 ? () => _setQuantity(item, item.qty - 1) : null,
+            child: const Icon(Icons.remove, size: 13),
           ),
+          const SizedBox(width: 3),
           SizedBox(
-            width: 30,
+            width: 34,
             height: 38,
             child: TextFormField(
               controller: item.qtyController,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 14,
                 color: kPrimaryBlue,
                 fontWeight: FontWeight.w700,
               ),
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(vertical: 8),
+                contentPadding: EdgeInsets.zero,
               ),
               onChanged: (value) {
                 final quantity = int.tryParse(value) ?? 1;
@@ -7649,14 +7704,10 @@ class _NewSalePageState extends State<NewSalePage> {
               },
             ),
           ),
-          SizedBox(
-            width: 20,
-            height: 38,
-            child: IconButton(
-              onPressed: () => _setQuantity(item, item.qty + 1),
-              icon: const Icon(Icons.add, size: 12),
-              padding: EdgeInsets.zero,
-            ),
+          const SizedBox(width: 3),
+          GestureDetector(
+            onTap: () => _setQuantity(item, item.qty + 1),
+            child: const Icon(Icons.add, size: 13),
           ),
         ],
       ),
@@ -7699,45 +7750,41 @@ class _NewSalePageState extends State<NewSalePage> {
 
   Widget _buildDiscountTypeField(SaleEntry item) {
     return Container(
-      width: 50,
+      width: 76,
       height: 38,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade300),
       ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 42,
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: item.discountType,
-                isDense: true,
-                items: const [
-                  DropdownMenuItem(value: '₹', child: Text('₹')),
-                  DropdownMenuItem(value: '%', child: Text('%')),
-                ],
-                onChanged: (v) => setState(() {
-                  item.discountType = v ?? '₹';
-                }),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: kPrimaryBlue,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: item.discountType,
+          isDense: true,
+          isExpanded: true,
+          iconSize: 14,
+          itemHeight: 48,
+          items: const [
+            DropdownMenuItem(value: '₹', child: Text('₹')),
+            DropdownMenuItem(value: '%', child: Text('%')),
+          ],
+          onChanged: (v) => setState(() {
+            item.discountType = v ?? '₹';
+          }),
+          style: const TextStyle(
+            fontSize: 13,
+            color: kPrimaryBlue,
+            fontWeight: FontWeight.w700,
           ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildDiscountValueField(SaleEntry item) {
     return Container(
-      width: 65,
+      width: 90,
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
@@ -7783,6 +7830,7 @@ class _NewSalePageState extends State<NewSalePage> {
           color: Colors.white,
         ),
         maxLines: 1,
+        softWrap: false,
         overflow: TextOverflow.ellipsis,
       ),
     );
@@ -7815,6 +7863,7 @@ class _NewSalePageState extends State<NewSalePage> {
           color: productStyle ? kPrimaryBlue : const Color(0xFF334155),
         ),
         maxLines: 1,
+        softWrap: false,
         overflow: TextOverflow.ellipsis,
       ),
     );
@@ -7882,7 +7931,290 @@ class _NewSalePageState extends State<NewSalePage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: const SizedBox.shrink(),
+      body: Container(
+        color: const Color(0xFFF6F8FB),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(30, 28, 30, 24),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 1476,
+                    height: 234,
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: kLightBlue,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300, width: 1),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      const Text(
+                        'Sale Details',
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                          color: kPrimaryBlue,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 315,
+                            height: 60,
+                            child: _buildField(
+                              label: 'Date',
+                              controller: _dateController,
+                            ),
+                          ),
+                          const SizedBox(width: 30),
+                          SizedBox(
+                            width: 405,
+                            height: 60,
+                            child: _buildField(
+                              label: 'Customer',
+                              controller: _customerController,
+                              hint: 'Customer',
+                              onChanged: _updateCustomerPartySuggestions,
+                            ),
+                          ),
+                          const SizedBox(width: 30),
+                          SizedBox(
+                            width: 274,
+                            height: 60,
+                            child: DropdownButtonFormField<String>(
+                              initialValue: _saleType,
+                              decoration: InputDecoration(
+                                labelText: 'Sale Type',
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                              ),
+                              items: const [
+                                DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                                DropdownMenuItem(
+                                  value: 'Credit',
+                                  child: Text('Credit'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Estimate',
+                                  child: Text('Estimate'),
+                                ),
+                                DropdownMenuItem(value: 'Order', child: Text('Order')),
+                              ],
+                              onChanged: (value) => setState(() {
+                                _saleType = value ?? 'Cash';
+                                _billNo = _nextNumberForType(_saleType);
+                                _billController.text = _billNo;
+                              }),
+                            ),
+                          ),
+                          const SizedBox(width: 30),
+                          SizedBox(
+                            width: 344,
+                            height: 60,
+                            child: _buildField(
+                              label: _numberLabel,
+                              controller: _billController,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: 1430,
+                        height: 58,
+                        child: TextFormField(
+                          controller: _searchController,
+                          onChanged: _updateSearch,
+                          decoration: InputDecoration(
+                            labelText: 'Product Search',
+                            hintText: 'Search product code or product name',
+                            filled: true,
+                            fillColor: Colors.white,
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () => _searchController.clear(),
+                                  )
+                                : null,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                          ),
+                        ),
+                      ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: 1476,
+                    height: 342,
+                    child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: kLightBlue,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300, width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const SizedBox(
+                            width: 1195,
+                            child: Text(
+                              'Sale Items Bill Table',
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600,
+                                color: kPrimaryBlue,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 240,
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                'Stock : 50',
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: 1436,
+                        height: 46,
+                        child: Row(
+                          children: [
+                            _saleTableHeaderCell('S.No', width: 64),
+                            const SizedBox(width: 6),
+                            _saleTableHeaderCell('Product', width: 352),
+                            const SizedBox(width: 6),
+                            _saleTableHeaderCell('Purchase', width: 112),
+                            const SizedBox(width: 6),
+                            _saleTableHeaderCell('MRP', width: 112),
+                            const SizedBox(width: 6),
+                            _saleTableHeaderCell('Qty', width: 82),
+                            const SizedBox(width: 8),
+                            _saleTableHeaderCell('Sale Price', width: 128),
+                            const SizedBox(width: 6),
+                            _saleTableHeaderCell('₹/%', width: 76),
+                            const SizedBox(width: 8),
+                            _saleTableHeaderCell('Discount', width: 90),
+                            const SizedBox(width: 6),
+                            _saleTableHeaderCell('Tax Type', width: 88),
+                            const SizedBox(width: 6),
+                            _saleTableHeaderCell('Tax %', width: 64),
+                            const SizedBox(width: 6),
+                            _saleTableHeaderCell('Total', width: 150),
+                            const SizedBox(width: 6),
+                            SizedBox(
+                              width: 36,
+                              height: 46,
+                              child: Center(
+                                child: Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (_saleItems.isEmpty)
+                        const SizedBox(
+                          width: 1440,
+                          height: 126,
+                          child: Center(
+                            child: Text(
+                              'Add products to start the sale.',
+                              style: TextStyle(color: Color(0xFF64748B)),
+                            ),
+                          ),
+                        )
+                      else
+                        Column(
+                          children: List.generate(
+                            _saleItems.length,
+                            (index) => _buildSaleItemRow(
+                              index,
+                              _saleItems[index],
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: 140,
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: () {},
+                          child: const Text('+ Add Item'),
+                        ),
+                      ),
+                    ],
+                  ),
+                    ),
+                  ),
+                ],
+              ),
+              if (_filteredCustomerParties.isNotEmpty)
+                Positioned(
+                  left: 365,
+                  top: 132,
+                  child: _buildCustomerPartySuggestions(),
+                ),
+              if (_searchQuery.trim().isNotEmpty && _filteredProducts.isNotEmpty)
+                Positioned(
+                  left: 20,
+                  top: 210,
+                  child: _buildProductSuggestions(),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1767,40 +1767,172 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                                       padding: const EdgeInsets.only(
                                         bottom: 10,
                                       ),
-                                      child: DropdownButtonFormField<String>(
-                                        initialValue: _gstAvailable,
-                                        decoration: InputDecoration(
-                                          labelText: 'GSTIN Available?',
-                                          filled: true,
-                                          fillColor: Colors.white,
-                                          contentPadding:
-                                              const EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 10,
+                                      child: Builder(
+                                        builder: (context) {
+                                          final GlobalKey gstAvailableKey =
+                                              GlobalKey();
+
+                                          return GestureDetector(
+                                            key: gstAvailableKey,
+                                            behavior: HitTestBehavior.opaque,
+                                            onTap: () {
+                                              final RenderBox button =
+                                                  gstAvailableKey
+                                                          .currentContext!
+                                                          .findRenderObject()
+                                                      as RenderBox;
+                                              final OverlayState overlay =
+                                                  Overlay.of(context);
+                                              final RenderBox overlayBox =
+                                                  overlay.context
+                                                          .findRenderObject()
+                                                      as RenderBox;
+
+                                              final Offset position = button
+                                                  .localToGlobal(
+                                                    Offset.zero,
+                                                    ancestor: overlayBox,
+                                                  );
+
+                                              late OverlayEntry popupEntry;
+                                              popupEntry = OverlayEntry(
+                                                builder: (context) {
+                                                  return Stack(
+                                                    children: [
+                                                      Positioned.fill(
+                                                        child: GestureDetector(
+                                                          behavior:
+                                                              HitTestBehavior
+                                                                  .opaque,
+                                                          onTap:
+                                                              popupEntry.remove,
+                                                          child: Container(
+                                                            color: Colors
+                                                                .transparent,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Positioned(
+                                                        left: position.dx,
+                                                        top:
+                                                            position.dy +
+                                                            button.size.height,
+                                                        width:
+                                                            button.size.width,
+                                                        child: Material(
+                                                          color: Colors
+                                                              .transparent,
+                                                          child: Container(
+                                                            width: button
+                                                                .size
+                                                                .width,
+                                                            decoration:
+                                                                BoxDecoration(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  borderRadius:
+                                                                      BorderRadius.circular(
+                                                                        14,
+                                                                      ),
+                                                                  border: Border.all(
+                                                                    color: Colors
+                                                                        .grey
+                                                                        .shade300,
+                                                                  ),
+                                                                ),
+                                                            clipBehavior:
+                                                                Clip.antiAlias,
+                                                            child: Column(
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              children:
+                                                                  ['Yes', 'No'].map((
+                                                                    gstAvailable,
+                                                                  ) {
+                                                                    return GestureDetector(
+                                                                      behavior:
+                                                                          HitTestBehavior
+                                                                              .opaque,
+                                                                      onTap: () {
+                                                                        popupEntry
+                                                                            .remove();
+                                                                        setState(() {
+                                                                          _gstAvailable =
+                                                                              gstAvailable;
+                                                                        });
+                                                                      },
+                                                                      child: Container(
+                                                                        width: button
+                                                                            .size
+                                                                            .width,
+                                                                        height: button
+                                                                            .size
+                                                                            .height,
+                                                                        padding: const EdgeInsets.symmetric(
+                                                                          horizontal:
+                                                                              12,
+                                                                          vertical:
+                                                                              10,
+                                                                        ),
+                                                                        alignment:
+                                                                            Alignment.centerLeft,
+                                                                        child: Text(
+                                                                          gstAvailable,
+                                                                          style: Theme.of(
+                                                                            context,
+                                                                          ).textTheme.titleMedium,
+                                                                        ),
+                                                                      ),
+                                                                    );
+                                                                  }).toList(),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
+                                              );
+
+                                              overlay.insert(popupEntry);
+                                            },
+                                            child: InputDecorator(
+                                              isEmpty: false,
+                                              decoration: InputDecoration(
+                                                labelText: 'GSTIN Available?',
+                                                filled: true,
+                                                fillColor: Colors.white,
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 10,
+                                                    ),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(14),
+                                                  borderSide: BorderSide(
+                                                    color: Colors.grey.shade300,
+                                                  ),
+                                                ),
                                               ),
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              14,
+                                              child: Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      _gstAvailable,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .titleMedium,
+                                                    ),
+                                                  ),
+                                                  const Icon(
+                                                    Icons.arrow_drop_down,
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                            borderSide: BorderSide(
-                                              color: Colors.grey.shade300,
-                                            ),
-                                          ),
-                                        ),
-                                        items: const [
-                                          DropdownMenuItem(
-                                            value: 'Yes',
-                                            child: Text('Yes'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'No',
-                                            child: Text('No'),
-                                          ),
-                                        ],
-                                        onChanged: (value) {
-                                          setState(() {
-                                            _gstAvailable = value ?? 'No';
-                                          });
+                                          );
                                         },
                                       ),
                                     ),
@@ -2039,14 +2171,7 @@ class _PartiesPageState extends State<PartiesPage> {
                             controller: _partyNameController,
                           ),
                           const SizedBox(width: 12),
-                          _dropdownField(
-                            label: 'Party Type',
-                            width: 180,
-                            value: _partyType,
-                            options: const ['Customer', 'Supplier', 'Both'],
-                            onChanged: (value) =>
-                                setState(() => _partyType = value),
-                          ),
+                          _partyTypeDropdownField(),
                           const SizedBox(width: 12),
                           _textField(
                             label: 'Mobile Number',
@@ -2071,23 +2196,9 @@ class _PartiesPageState extends State<PartiesPage> {
                             controller: _addressController,
                           ),
                           const SizedBox(width: 12),
-                          _dropdownField(
-                            label: 'Category',
-                            width: 260,
-                            value: _category,
-                            options: _categoryOptions,
-                            onChanged: (value) =>
-                                setState(() => _category = value),
-                          ),
+                          _categoryDropdownField(),
                           const SizedBox(width: 12),
-                          _dropdownField(
-                            label: 'GSTIN Available',
-                            width: 160,
-                            value: _gstinAvailable,
-                            options: const ['Yes', 'No'],
-                            onChanged: (value) =>
-                                setState(() => _gstinAvailable = value),
-                          ),
+                          _gstinAvailableDropdownField(),
                           const SizedBox(width: 12),
                           _textField(
                             label: 'GSTIN',
@@ -2115,28 +2226,9 @@ class _PartiesPageState extends State<PartiesPage> {
                             controller: _openingBalanceController,
                           ),
                           const SizedBox(width: 12),
-                          _dropdownField(
-                            label: 'Balance Type',
-                            width: 200,
-                            value: _balanceType,
-                            options: const ['Receivable', 'Payable', 'Zero'],
-                            onChanged: (value) =>
-                                setState(() => _balanceType = value),
-                          ),
+                          _balanceTypeDropdownField(),
                           const SizedBox(width: 12),
-                          _dropdownField(
-                            label: 'Payment Terms',
-                            width: 180,
-                            value: _paymentTerms,
-                            options: const [
-                              'Cash',
-                              '7 Days',
-                              '15 Days',
-                              '30 Days',
-                            ],
-                            onChanged: (value) =>
-                                setState(() => _paymentTerms = value),
-                          ),
+                          _paymentTermsDropdownField(),
                           const SizedBox(width: 12),
                           _textField(
                             label: 'Due Date',
@@ -3265,6 +3357,571 @@ class _PartiesPageState extends State<PartiesPage> {
             vertical: 12,
           ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+    );
+  }
+
+  Widget _partyTypeDropdownField() {
+    final GlobalKey partyTypeKey = GlobalKey();
+
+    return SizedBox(
+      key: partyTypeKey,
+      width: 180,
+      height: 52,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          final RenderBox button =
+              partyTypeKey.currentContext!.findRenderObject() as RenderBox;
+          final OverlayState overlay = Overlay.of(context);
+          final RenderBox overlayBox =
+              overlay.context.findRenderObject() as RenderBox;
+
+          final Offset position =
+              button.localToGlobal(Offset.zero, ancestor: overlayBox);
+
+          late OverlayEntry popupEntry;
+          popupEntry = OverlayEntry(
+            builder: (context) {
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: popupEntry.remove,
+                      child: Container(color: Colors.transparent),
+                    ),
+                  ),
+                  Positioned(
+                    left: position.dx,
+                    top: position.dy + button.size.height,
+                    width: button.size.width,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        width: button.size.width,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: ['Customer', 'Supplier', 'Both'].map((
+                            partyType,
+                          ) {
+                            return GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                popupEntry.remove();
+                                setState(() {
+                                  _partyType = partyType;
+                                });
+                              },
+                              child: Container(
+                                width: button.size.width,
+                                height: 44,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  partyType,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+
+          overlay.insert(popupEntry);
+        },
+        child: InputDecorator(
+          isEmpty: false,
+          decoration: InputDecoration(
+            labelText: 'Party Type',
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _partyType,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              const Icon(Icons.arrow_drop_down),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _categoryDropdownField() {
+    final GlobalKey categoryKey = GlobalKey();
+
+    return SizedBox(
+      key: categoryKey,
+      width: 260,
+      height: 52,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          final RenderBox button =
+              categoryKey.currentContext!.findRenderObject() as RenderBox;
+          final OverlayState overlay = Overlay.of(context);
+          final RenderBox overlayBox =
+              overlay.context.findRenderObject() as RenderBox;
+
+          final Offset position =
+              button.localToGlobal(Offset.zero, ancestor: overlayBox);
+          final double popupTop = position.dy + button.size.height;
+          final double popupMaxHeight = overlayBox.size.height - popupTop;
+
+          late OverlayEntry popupEntry;
+          popupEntry = OverlayEntry(
+            builder: (context) {
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: popupEntry.remove,
+                      child: Container(color: Colors.transparent),
+                    ),
+                  ),
+                  Positioned(
+                    left: position.dx,
+                    top: popupTop,
+                    width: button.size.width,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        width: button.size.width,
+                        constraints: BoxConstraints(maxHeight: popupMaxHeight),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: ListView(
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          children: _categoryOptions.map((category) {
+                            return GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                popupEntry.remove();
+                                setState(() {
+                                  _category = category;
+                                });
+                              },
+                              child: Container(
+                                width: button.size.width,
+                                height: 44,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  category,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+
+          overlay.insert(popupEntry);
+        },
+        child: InputDecorator(
+          isEmpty: false,
+          decoration: InputDecoration(
+            labelText: 'Category',
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _category,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const Icon(Icons.arrow_drop_down),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _gstinAvailableDropdownField() {
+    final GlobalKey gstinAvailableKey = GlobalKey();
+
+    return SizedBox(
+      key: gstinAvailableKey,
+      width: 160,
+      height: 52,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          final RenderBox button =
+              gstinAvailableKey.currentContext!.findRenderObject() as RenderBox;
+          final OverlayState overlay = Overlay.of(context);
+          final RenderBox overlayBox =
+              overlay.context.findRenderObject() as RenderBox;
+
+          final Offset position =
+              button.localToGlobal(Offset.zero, ancestor: overlayBox);
+
+          late OverlayEntry popupEntry;
+          popupEntry = OverlayEntry(
+            builder: (context) {
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: popupEntry.remove,
+                      child: Container(color: Colors.transparent),
+                    ),
+                  ),
+                  Positioned(
+                    left: position.dx,
+                    top: position.dy + button.size.height,
+                    width: button.size.width,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        width: button.size.width,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: ['Yes', 'No'].map((gstinAvailable) {
+                            return GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                popupEntry.remove();
+                                setState(() {
+                                  _gstinAvailable = gstinAvailable;
+                                });
+                              },
+                              child: Container(
+                                width: button.size.width,
+                                height: 44,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 0,
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  gstinAvailable,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontSize: 18),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+
+          overlay.insert(popupEntry);
+        },
+        child: InputDecorator(
+          isEmpty: false,
+          decoration: InputDecoration(
+            labelText: 'GSTIN Available',
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _gstinAvailable,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              const Icon(Icons.arrow_drop_down),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _balanceTypeDropdownField() {
+    final GlobalKey balanceTypeKey = GlobalKey();
+
+    return SizedBox(
+      key: balanceTypeKey,
+      width: 200,
+      height: 52,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          final RenderBox button =
+              balanceTypeKey.currentContext!.findRenderObject() as RenderBox;
+          final OverlayState overlay = Overlay.of(context);
+          final RenderBox overlayBox =
+              overlay.context.findRenderObject() as RenderBox;
+
+          final Offset position =
+              button.localToGlobal(Offset.zero, ancestor: overlayBox);
+
+          late OverlayEntry popupEntry;
+          popupEntry = OverlayEntry(
+            builder: (context) {
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: popupEntry.remove,
+                      child: Container(color: Colors.transparent),
+                    ),
+                  ),
+                  Positioned(
+                    left: position.dx,
+                    top: position.dy + button.size.height,
+                    width: button.size.width,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        width: button.size.width,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: ['Receivable', 'Payable', 'Zero'].map((
+                            balanceType,
+                          ) {
+                            return GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                popupEntry.remove();
+                                setState(() {
+                                  _balanceType = balanceType;
+                                });
+                              },
+                              child: Container(
+                                width: button.size.width,
+                                height: 44,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  balanceType,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+
+          overlay.insert(popupEntry);
+        },
+        child: InputDecorator(
+          isEmpty: false,
+          decoration: InputDecoration(
+            labelText: 'Balance Type',
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _balanceType,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              const Icon(Icons.arrow_drop_down),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _paymentTermsDropdownField() {
+    final GlobalKey paymentTermsKey = GlobalKey();
+
+    return SizedBox(
+      key: paymentTermsKey,
+      width: 180,
+      height: 52,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          final RenderBox button =
+              paymentTermsKey.currentContext!.findRenderObject() as RenderBox;
+          final OverlayState overlay = Overlay.of(context);
+          final RenderBox overlayBox =
+              overlay.context.findRenderObject() as RenderBox;
+
+          final Offset position =
+              button.localToGlobal(Offset.zero, ancestor: overlayBox);
+
+          late OverlayEntry popupEntry;
+          popupEntry = OverlayEntry(
+            builder: (context) {
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: popupEntry.remove,
+                      child: Container(color: Colors.transparent),
+                    ),
+                  ),
+                  Positioned(
+                    left: position.dx,
+                    top: position.dy + button.size.height,
+                    width: button.size.width,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        width: button.size.width,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: ['Cash', '7 Days', '15 Days', '30 Days'].map((
+                            paymentTerms,
+                          ) {
+                            return GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                popupEntry.remove();
+                                setState(() {
+                                  _paymentTerms = paymentTerms;
+                                });
+                              },
+                              child: Container(
+                                width: button.size.width,
+                                height: 44,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  paymentTerms,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+
+          overlay.insert(popupEntry);
+        },
+        child: InputDecorator(
+          isEmpty: false,
+          decoration: InputDecoration(
+            labelText: 'Payment Terms',
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _paymentTerms,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              const Icon(Icons.arrow_drop_down),
+            ],
+          ),
         ),
       ),
     );
@@ -4720,6 +5377,7 @@ class SaleEntry {
   );
   int qty;
   String discountType;
+  String taxType = 'Inc';
 
   SaleEntry({required this.product, this.qty = 1, this.discountType = '₹'})
     : qtyController = TextEditingController(text: qty.toString()),
@@ -6975,6 +7633,20 @@ class _NewSalePageState extends State<NewSalePage> {
   final List<Map<String, String>> _customerParties = [];
   final List<Map<String, String>> _filteredCustomerParties = [];
 
+  String get _saleStockDisplay {
+    if (_saleItems.isEmpty) return '-';
+
+    final selectedProduct = _saleItems.last.product;
+    final selectedCode = selectedProduct.productCode.trim().toLowerCase();
+    final matchingIndex = _availableProducts.indexWhere(
+      (product) => product.productCode.trim().toLowerCase() == selectedCode,
+    );
+    final stock = matchingIndex >= 0
+        ? _availableProducts[matchingIndex].currentStock
+        : selectedProduct.currentStock;
+    return stock.toString();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -7109,7 +7781,39 @@ class _NewSalePageState extends State<NewSalePage> {
 
   void _setQuantity(SaleEntry item, int value) {
     item.qty = value < 1 ? 1 : value;
-    item.qtyController.text = item.qty.toString();
+    final text = item.qty.toString();
+    item.qtyController.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+    setState(() {});
+  }
+
+  void _handleQuantityChanged(SaleEntry item, String value) {
+    final quantity = int.tryParse(value);
+    if (quantity == null || quantity < 1) {
+      setState(() {});
+      return;
+    }
+    item.qty = quantity;
+    setState(() {});
+  }
+
+  void _commitQuantity(SaleEntry item) {
+    final quantity = int.tryParse(item.qtyController.text.trim());
+    if (quantity == null || quantity < 1) {
+      _setQuantity(item, 1);
+      return;
+    }
+
+    item.qty = quantity;
+    final text = quantity.toString();
+    if (item.qtyController.text != text) {
+      item.qtyController.value = TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
+      );
+    }
     setState(() {});
   }
 
@@ -7635,7 +8339,7 @@ class _NewSalePageState extends State<NewSalePage> {
           const SizedBox(width: 8),
           _buildDiscountValueField(item),
           const SizedBox(width: 6),
-          _saleTableTextCell('Inc', width: 88),
+          _buildTaxTypeField(item),
           const SizedBox(width: 6),
           _saleTableTextCell('0.00', width: 64),
           const SizedBox(width: 6),
@@ -7667,12 +8371,14 @@ class _NewSalePageState extends State<NewSalePage> {
     return Container(
       width: 82,
       height: 38,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -7684,24 +8390,33 @@ class _NewSalePageState extends State<NewSalePage> {
           SizedBox(
             width: 34,
             height: 38,
-            child: TextFormField(
-              controller: item.qtyController,
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: kPrimaryBlue,
-                fontWeight: FontWeight.w700,
-              ),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-              ),
-              onChanged: (value) {
-                final quantity = int.tryParse(value) ?? 1;
-                _setQuantity(item, quantity);
+            child: Focus(
+              onFocusChange: (hasFocus) {
+                if (!hasFocus) {
+                  _commitQuantity(item);
+                }
               },
+              child: Transform.translate(
+                offset: const Offset(0, 2.5),
+                child: TextFormField(
+                  controller: item.qtyController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  textAlignVertical: TextAlignVertical.center,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: kPrimaryBlue,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onChanged: (value) => _handleQuantityChanged(item, value),
+                  onEditingComplete: () => _commitQuantity(item),
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 3),
@@ -7749,7 +8464,10 @@ class _NewSalePageState extends State<NewSalePage> {
   }
 
   Widget _buildDiscountTypeField(SaleEntry item) {
+    final GlobalKey discountTypeKey = GlobalKey();
+
     return Container(
+      key: discountTypeKey,
       width: 76,
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
@@ -7758,25 +8476,101 @@ class _NewSalePageState extends State<NewSalePage> {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade300),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: item.discountType,
-          isDense: true,
-          isExpanded: true,
-          iconSize: 14,
-          itemHeight: 48,
-          items: const [
-            DropdownMenuItem(value: '₹', child: Text('₹')),
-            DropdownMenuItem(value: '%', child: Text('%')),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          final RenderBox button =
+              discountTypeKey.currentContext!.findRenderObject() as RenderBox;
+          final OverlayState overlay = Overlay.of(context);
+          final RenderBox overlayBox =
+              overlay.context.findRenderObject() as RenderBox;
+
+          final Offset position =
+              button.localToGlobal(Offset.zero, ancestor: overlayBox);
+
+          late OverlayEntry popupEntry;
+          popupEntry = OverlayEntry(
+            builder: (context) {
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: popupEntry.remove,
+                      child: Container(color: Colors.transparent),
+                    ),
+                  ),
+                  Positioned(
+                    left: position.dx,
+                    top: position.dy + button.size.height,
+                    width: 76,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        width: 76,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: ['₹', '%'].map((discountType) {
+                            return GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                popupEntry.remove();
+                                setState(() {
+                                  item.discountType = discountType;
+                                });
+                              },
+                              child: Container(
+                                width: 76,
+                                height: 38,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  discountType,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: kPrimaryBlue,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+
+          overlay.insert(popupEntry);
+        },
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                item.discountType,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: kPrimaryBlue,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.arrow_drop_down,
+              size: 14,
+            ),
           ],
-          onChanged: (v) => setState(() {
-            item.discountType = v ?? '₹';
-          }),
-          style: const TextStyle(
-            fontSize: 13,
-            color: kPrimaryBlue,
-            fontWeight: FontWeight.w700,
-          ),
         ),
       ),
     );
@@ -7865,6 +8659,120 @@ class _NewSalePageState extends State<NewSalePage> {
         maxLines: 1,
         softWrap: false,
         overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _buildTaxTypeField(SaleEntry item) {
+    final GlobalKey taxTypeKey = GlobalKey();
+
+    return Container(
+      key: taxTypeKey,
+      width: 88,
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      alignment: Alignment.centerLeft,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          final RenderBox button =
+              taxTypeKey.currentContext!.findRenderObject() as RenderBox;
+          final OverlayState overlay = Overlay.of(context);
+          final RenderBox overlayBox =
+              overlay.context.findRenderObject() as RenderBox;
+
+          final Offset position =
+              button.localToGlobal(Offset.zero, ancestor: overlayBox);
+
+          late OverlayEntry popupEntry;
+          popupEntry = OverlayEntry(
+            builder: (context) {
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: popupEntry.remove,
+                      child: Container(color: Colors.transparent),
+                    ),
+                  ),
+                  Positioned(
+                    left: position.dx,
+                    top: position.dy + button.size.height,
+                    width: 88,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        width: 88,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: ['Inc', 'Exc'].map((taxType) {
+                            return GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                popupEntry.remove();
+                                setState(() {
+                                  item.taxType = taxType;
+                                });
+                              },
+                              child: Container(
+                                width: 88,
+                                height: 38,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  taxType,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF334155),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+
+          overlay.insert(popupEntry);
+        },
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                item.taxType,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF334155),
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.arrow_drop_down,
+              size: 16,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -7988,44 +8896,156 @@ class _NewSalePageState extends State<NewSalePage> {
                             ),
                           ),
                           const SizedBox(width: 30),
-                          SizedBox(
-                            width: 274,
-                            height: 60,
-                            child: DropdownButtonFormField<String>(
-                              initialValue: _saleType,
-                              decoration: InputDecoration(
-                                labelText: 'Sale Type',
-                                filled: true,
-                                fillColor: Colors.white,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 12,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.shade300,
+                          Builder(
+                            builder: (context) {
+                              final GlobalKey saleTypeKey = GlobalKey();
+
+                              return SizedBox(
+                                key: saleTypeKey,
+                                width: 274,
+                                height: 60,
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () {
+                                    final RenderBox button = saleTypeKey
+                                        .currentContext!
+                                        .findRenderObject() as RenderBox;
+                                    final OverlayState overlay =
+                                        Overlay.of(context);
+                                    final RenderBox overlayBox = overlay.context
+                                        .findRenderObject() as RenderBox;
+
+                                    final Offset position = button.localToGlobal(
+                                      Offset.zero,
+                                      ancestor: overlayBox,
+                                    );
+
+                                    late OverlayEntry popupEntry;
+                                    popupEntry = OverlayEntry(
+                                      builder: (context) {
+                                        return Stack(
+                                          children: [
+                                            Positioned.fill(
+                                              child: GestureDetector(
+                                                behavior:
+                                                    HitTestBehavior.opaque,
+                                                onTap: popupEntry.remove,
+                                                child: Container(
+                                                  color: Colors.transparent,
+                                                ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              left: position.dx,
+                                              top:
+                                                  position.dy + button.size.height,
+                                              width: button.size.width,
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                child: Container(
+                                                  width: button.size.width,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    borderRadius:
+                                                        BorderRadius.circular(8),
+                                                    border: Border.all(
+                                                      color: Colors.grey.shade300,
+                                                    ),
+                                                  ),
+                                                  clipBehavior: Clip.antiAlias,
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      'Cash',
+                                                      'Credit',
+                                                      'Estimate',
+                                                      'Order',
+                                                    ].map((saleType) {
+                                                      return GestureDetector(
+                                                        behavior: HitTestBehavior
+                                                            .opaque,
+                                                        onTap: () {
+                                                          popupEntry.remove();
+                                                          setState(() {
+                                                            _saleType = saleType;
+                                                            _billNo =
+                                                                _nextNumberForType(
+                                                                  _saleType,
+                                                                );
+                                                            _billController.text =
+                                                                _billNo;
+                                                          });
+                                                        },
+                                                        child: Container(
+                                                          width:
+                                                              button.size.width,
+                                                          height: 44,
+                                                          padding:
+                                                              const EdgeInsets.symmetric(
+                                                                horizontal: 12,
+                                                                vertical: 12,
+                                                              ),
+                                                          alignment: Alignment
+                                                              .centerLeft,
+                                                          child: Text(
+                                                            saleType,
+                                                            style: Theme.of(context)
+                                                                .textTheme
+                                                                .titleMedium
+                                                                ?.copyWith(
+                                                                  fontSize: 18,
+                                                                ),
+                                                          ),
+                                                        ),
+                                                      );
+                                                    }).toList(),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+
+                                    overlay.insert(popupEntry);
+                                  },
+                                  child: InputDecorator(
+                                    isEmpty: false,
+                                    decoration: InputDecoration(
+                                      labelText: 'Sale Type',
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 12,
+                                          ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                          color: Colors.grey.shade300,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            _saleType,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium,
+                                          ),
+                                        ),
+                                        const Icon(Icons.arrow_drop_down),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              items: const [
-                                DropdownMenuItem(value: 'Cash', child: Text('Cash')),
-                                DropdownMenuItem(
-                                  value: 'Credit',
-                                  child: Text('Credit'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'Estimate',
-                                  child: Text('Estimate'),
-                                ),
-                                DropdownMenuItem(value: 'Order', child: Text('Order')),
-                              ],
-                              onChanged: (value) => setState(() {
-                                _saleType = value ?? 'Cash';
-                                _billNo = _nextNumberForType(_saleType);
-                                _billController.text = _billNo;
-                              }),
-                            ),
+                              );
+                            },
                           ),
                           const SizedBox(width: 30),
                           SizedBox(
@@ -8106,7 +9126,7 @@ class _NewSalePageState extends State<NewSalePage> {
                             child: Align(
                               alignment: Alignment.centerRight,
                               child: Text(
-                                'Stock : 50',
+                                'Stock : $_saleStockDisplay',
                                 maxLines: 1,
                                 softWrap: false,
                                 overflow: TextOverflow.ellipsis,
@@ -8151,13 +9171,6 @@ class _NewSalePageState extends State<NewSalePage> {
                             SizedBox(
                               width: 36,
                               height: 46,
-                              child: Center(
-                                child: Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
-                                  size: 20,
-                                ),
-                              ),
                             ),
                           ],
                         ),
@@ -8170,7 +9183,10 @@ class _NewSalePageState extends State<NewSalePage> {
                           child: Center(
                             child: Text(
                               'Add products to start the sale.',
-                              style: TextStyle(color: Color(0xFF64748B)),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey,
+                              ),
                             ),
                           ),
                         )

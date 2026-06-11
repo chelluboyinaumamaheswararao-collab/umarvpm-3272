@@ -769,292 +769,30 @@ class _PurchasePageState extends State<PurchasePage> {
                               )
                             else
                               Column(
-                                children: List.generate(_items.length, (index) {
-                                  final it = _items[index];
-                                  return Container(
+                                children: List.generate(
+                                  _items.length,
+                                  (_) => Container(
                                     width: double.infinity,
+                                    height: 60,
                                     margin: const EdgeInsets.only(bottom: 4),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
+                                    alignment: Alignment.center,
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: kLightBlue,
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: Colors.grey.shade200,
                                       ),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            '${it.product.productCode} - ${it.product.productName}',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w700,
-                                              color: kPrimaryBlue,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        SizedBox(
-                                          width: 90,
-                                          height: 44,
-                                          child: DropdownButtonFormField<String>(
-                                            isExpanded: true,
-                                            isDense: true,
-                                            value:
-                                                const [
-                                                  'Nos',
-                                                  'Bag',
-                                                  'Box',
-                                                  'Feet',
-                                                  'Kg',
-                                                  'Liter',
-                                                  'Other',
-                                                ].contains(
-                                                  it.unitController.text,
-                                                )
-                                                ? it.unitController.text
-                                                : 'Nos',
-                                            decoration: InputDecoration(
-                                              labelText: 'Unit',
-                                              filled: true,
-                                              fillColor: Colors.white,
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 6,
-                                                  ),
-                                              border: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                borderSide: BorderSide(
-                                                  color: Colors.grey.shade300,
-                                                ),
-                                              ),
-                                            ),
-                                            items:
-                                                const [
-                                                      'Nos',
-                                                      'Bag',
-                                                      'Box',
-                                                      'Feet',
-                                                      'Kg',
-                                                      'Liter',
-                                                      'Other',
-                                                    ]
-                                                    .map(
-                                                      (unit) =>
-                                                          DropdownMenuItem(
-                                                            value: unit,
-                                                            child: Text(unit),
-                                                          ),
-                                                    )
-                                                    .toList(),
-                                            onChanged: (value) {
-                                              if (value == null) return;
-                                              setState(() {
-                                                it.unitController.text = value;
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        SizedBox(
-                                          width: 120,
-                                          height: 44,
-                                          child: TextFormField(
-                                            controller: it.rateController,
-                                            keyboardType:
-                                                const TextInputType.numberWithOptions(
-                                                  decimal: true,
-                                                ),
-                                            decoration: InputDecoration(
-                                              labelText: 'Purchase',
-                                              filled: true,
-                                              fillColor: Colors.white,
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 12,
-                                                  ),
-                                              border: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                borderSide: BorderSide(
-                                                  color: Colors.grey.shade300,
-                                                ),
-                                              ),
-                                            ),
-                                            onChanged: (_) => setState(() {}),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          width: 132,
-                                          height: 44,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 4,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.grey.shade300,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              IconButton(
-                                                onPressed: it.qty > 1
-                                                    ? () => _setQty(
-                                                        it,
-                                                        it.qty - 1,
-                                                      )
-                                                    : null,
-                                                icon: const Icon(
-                                                  Icons.remove,
-                                                  size: 18,
-                                                ),
-                                                padding: EdgeInsets.zero,
-                                                constraints:
-                                                    const BoxConstraints.tightFor(
-                                                      width: 32,
-                                                      height: 32,
-                                                    ),
-                                              ),
-                                              SizedBox(
-                                                width: 40,
-                                                child: TextFormField(
-                                                  controller: it.qtyController,
-                                                  onTap: () {
-                                                    it.qtyController.selection =
-                                                        TextSelection(
-                                                          baseOffset: 0,
-                                                          extentOffset: it
-                                                              .qtyController
-                                                              .text
-                                                              .length,
-                                                        );
-                                                  },
-                                                  onChanged: (value) {
-                                                    final qty = int.tryParse(
-                                                      value.trim(),
-                                                    );
-                                                    if (qty == null || qty < 1)
-                                                      return;
-                                                    setState(() {
-                                                      it.qty = qty;
-                                                    });
-                                                  },
-                                                  keyboardType:
-                                                      TextInputType.number,
-                                                  textAlign: TextAlign.center,
-                                                  decoration:
-                                                      const InputDecoration(
-                                                        border:
-                                                            InputBorder.none,
-                                                        isDense: true,
-                                                      ),
-                                                ),
-                                              ),
-                                              IconButton(
-                                                onPressed: () =>
-                                                    _setQty(it, it.qty + 1),
-                                                icon: const Icon(
-                                                  Icons.add,
-                                                  size: 18,
-                                                ),
-                                                padding: EdgeInsets.zero,
-                                                constraints:
-                                                    const BoxConstraints.tightFor(
-                                                      width: 32,
-                                                      height: 32,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          width: 110,
-                                          height: 50,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: kLightBlue,
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              const Text(
-                                                'Total',
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: Color(0xFF64748B),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                '₹${it.total.toStringAsFixed(2)}',
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: kPrimaryBlue,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        SizedBox(
-                                          width: 40,
-                                          height: 40,
-                                          child: IconButton(
-                                            onPressed: () => _deleteItem(index),
-                                            padding: EdgeInsets.zero,
-                                            icon: const Icon(
-                                              Icons.delete_outline,
-                                              color: Colors.redAccent,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        SizedBox(
-                                          width: 70,
-                                          height: 40,
-                                          child: Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: Text(
-                                              'Stock: ${it.product.currentStock}',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Color(0xFF64748B),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                    child: const Text(
+                                      'Manual Purchase Row Placeholder',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF64748B),
+                                      ),
                                     ),
-                                  );
-                                }),
+                                  ),
+                                ),
                               ),
                           ],
                         ),
@@ -4829,27 +4567,119 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: DropdownButtonFormField<String>(
-        initialValue: initialValue,
-        decoration: InputDecoration(
-          labelText: label,
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 12,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-        ),
-        items: items
-            .map(
-              (option) => DropdownMenuItem(value: option, child: Text(option)),
-            )
-            .toList(),
-        onChanged: onChanged,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final GlobalKey dropdownKey = GlobalKey();
+
+          return SizedBox(
+            key: dropdownKey,
+            width: constraints.maxWidth,
+            height: 48,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                final RenderBox button =
+                    dropdownKey.currentContext!.findRenderObject() as RenderBox;
+                final OverlayState overlay = Overlay.of(context);
+                final RenderBox overlayBox =
+                    overlay.context.findRenderObject() as RenderBox;
+                final Offset position =
+                    button.localToGlobal(Offset.zero, ancestor: overlayBox);
+
+                late OverlayEntry popupEntry;
+                popupEntry = OverlayEntry(
+                  builder: (context) {
+                    return Stack(
+                      children: [
+                        Positioned.fill(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: popupEntry.remove,
+                            child: Container(color: Colors.transparent),
+                          ),
+                        ),
+                        Positioned(
+                          left: position.dx,
+                          top: position.dy + button.size.height,
+                          width: button.size.width,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: Container(
+                              width: button.size.width,
+                              constraints: const BoxConstraints(maxHeight: 192),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                ),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x1A000000),
+                                    blurRadius: 6,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: ListView(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                children: items.map((option) {
+                                  return GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () {
+                                      popupEntry.remove();
+                                      onChanged(option);
+                                    },
+                                    child: Container(
+                                      width: button.size.width,
+                                      height: 48,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                      ),
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(option),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+                overlay.insert(popupEntry);
+              },
+              child: InputDecorator(
+                isEmpty: false,
+                decoration: InputDecoration(
+                  labelText: label,
+                  isDense: true,
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(initialValue)),
+                    const Icon(Icons.arrow_drop_down),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

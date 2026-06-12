@@ -2139,7 +2139,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
       index = existingIndex >= 0 ? existingIndex : _savedCompanies.length;
     }
 
-    final targetIndex = index!;
+    final targetIndex = index;
     final wasActive = targetIndex < _savedCompanies.length &&
         _savedCompanies[targetIndex]['companyName'] == _activeCompanyName;
     final shouldActivate = _activeCompanyName.isEmpty || wasActive;

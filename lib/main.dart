@@ -4924,10 +4924,26 @@ class InventoryPage extends StatefulWidget {
 
 class _InventoryPageState extends State<InventoryPage> {
   final _searchController = TextEditingController();
+  String _activeCompanyName = '';
   final List<ProductMaster> _products = [];
   final List<ProductMaster> _filteredProducts = [];
   final List<PurchaseStockLot> _stockLots = [];
   final List<PurchaseStockLot> _filteredStockLots = [];
+
+  String get _productStorageKey {
+    final company = _activeCompanyName.trim();
+    return company.isEmpty
+        ? 'product_master_list'
+        : 'product_master_list_$company';
+  }
+
+  String get _purchaseLotsStorageKey {
+    final company = _activeCompanyName.trim();
+    return company.isEmpty
+        ? 'purchase_lots'
+        : 'purchase_lots_$company';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -4937,8 +4953,9 @@ class _InventoryPageState extends State<InventoryPage> {
 
   Future<void> _loadProducts() async {
     final prefs = await SharedPreferences.getInstance();
+    _activeCompanyName = (prefs.getString('active_company_name') ?? '').trim();
 
-    final savedProducts = prefs.getStringList('product_master_list') ?? [];
+    final savedProducts = prefs.getStringList(_productStorageKey) ?? [];
     final productMap = <String, ProductMaster>{};
 
     for (final entry in savedProducts) {
@@ -4950,7 +4967,7 @@ class _InventoryPageState extends State<InventoryPage> {
       productMap[key] = product;
     }
 
-    final savedLots = prefs.getStringList('purchase_stock_lot_list') ?? [];
+    final savedLots = prefs.getStringList(_purchaseLotsStorageKey) ?? [];
     final lots = savedLots
         .map(
           (s) =>
@@ -4976,7 +4993,6 @@ class _InventoryPageState extends State<InventoryPage> {
         ..clear()
         ..addAll(_stockLots);
     });
-
   }
 
   void _updateSearch(String query) {
@@ -4986,8 +5002,12 @@ class _InventoryPageState extends State<InventoryPage> {
         _filteredProducts
           ..clear()
           ..addAll(_products);
+        _filteredStockLots
+          ..clear()
+          ..addAll(_stockLots);
         return;
       }
+
       _filteredProducts
         ..clear()
         ..addAll(
@@ -4998,6 +5018,23 @@ class _InventoryPageState extends State<InventoryPage> {
             return code.contains(text) ||
                 name.contains(text) ||
                 unit.contains(text);
+          }),
+        );
+
+      _filteredStockLots
+        ..clear()
+        ..addAll(
+          _stockLots.where((lot) {
+            final code = lot.productCode.toLowerCase();
+            final name = lot.productName.toLowerCase();
+            final unit = lot.unit.toLowerCase();
+            final lotNo = lot.lotNo.toLowerCase();
+            final purchaseNo = lot.purchaseNo.toLowerCase();
+            return code.contains(text) ||
+                name.contains(text) ||
+                unit.contains(text) ||
+                lotNo.contains(text) ||
+                purchaseNo.contains(text);
           }),
         );
     });
@@ -5023,25 +5060,39 @@ class _InventoryPageState extends State<InventoryPage> {
                 color: kLightBlue,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      labelText: 'Search by product code, name or unit',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Active Company: ${_activeCompanyName.isEmpty ? 'No company selected' : _activeCompanyName}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
                       ),
-                      suffixIcon: _searchController.text.isEmpty
-                          ? null
-                          : IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                              },
-                            ),
-                    ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          labelText: 'Search by product code, name or unit',
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          suffixIcon: _searchController.text.isEmpty
+                              ? null
+                              : IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                  },
+                                ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

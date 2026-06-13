@@ -2770,11 +2770,31 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
           ),
           const SizedBox(width: 8),
           SizedBox(
-            width: 84,
-            height: 40,
-            child: FilledButton(
-              onPressed: () => _selectCompany(index),
-              child: Text(isActive ? 'Active' : 'Select'),
+            width: 130,
+            height: 44,
+            child: GestureDetector(
+              onTap: isActive ? null : () => _selectCompany(index),
+              child: Container(
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: kPrimaryBlue,
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Center(
+                  child: Text(
+                    isActive ? 'Active' : 'Select',
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.clip,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 8),

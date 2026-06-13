@@ -2047,7 +2047,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
   ];
   OverlayEntry? _businessTypeOverlay;
   OverlayEntry? _activeCompanyOverlay;
-  final List<Map<String, String>> _savedCompanies = [];
+  final List<Map<String, dynamic>> _savedCompanies = [];
   String _activeCompanyName = '';
   int? _editingCompanyIndex;
   String _gstAvailable = 'No';
@@ -2063,20 +2063,16 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
   Future<void> _loadCompanyDetails() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getStringList('company_profiles_list') ?? [];
-    final companies = <Map<String, String>>[];
+    final companies = <Map<String, dynamic>>[];
 
     for (final entry in saved) {
       try {
         final decoded = jsonDecode(entry) as Map<String, dynamic>;
-        companies.add(
-          decoded.map(
-            (key, value) => MapEntry(key, value?.toString() ?? ''),
-          ),
-        );
+        companies.add(Map<String, dynamic>.from(decoded));
       } catch (_) {}
     }
 
-    final legacyCompany = <String, String>{
+    final legacyCompany = <String, dynamic>{
       'companyName': prefs.getString('company_name') ?? '',
       'businessType':
           prefs.getString('business_type') ?? 'Construction Materials',
@@ -2100,11 +2096,11 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
 
     var activeName = prefs.getString('active_company_name') ?? '';
     var activeIndex = companies.indexWhere(
-      (company) => company['companyName'] == activeName,
+      (company) => company['companyName']?.toString() == activeName,
     );
     if (activeIndex < 0 && companies.isNotEmpty) {
       activeIndex = 0;
-      activeName = companies.first['companyName'] ?? '';
+      activeName = companies.first['companyName']?.toString() ?? '';
       await prefs.setString('active_company_name', activeName);
     }
 
@@ -2127,52 +2123,34 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
 
   Future<void> _saveCompanyDetails() async {
     if (!_formKey.currentState!.validate()) return;
-    final prefs = await SharedPreferences.getInstance();
     final company = _currentCompanyData();
-    final editingIndex = _editingCompanyIndex;
-    late final int targetIndex;
+    final companyName = company['companyName']?.toString() ?? '';
+    if (companyName.isEmpty) return;
 
-    if (editingIndex == null) {
-      final duplicateExists = _savedCompanies.any(
-        (savedCompany) =>
-            savedCompany['companyName'] == company['companyName'],
+    final duplicateExists = _savedCompanies.any(
+      (savedCompany) =>
+          savedCompany['companyName']?.toString() == companyName,
+    );
+    if (duplicateExists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Company name already exists')),
       );
-      if (duplicateExists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Company name already exists')),
-        );
-        return;
-      }
-      targetIndex = _savedCompanies.length;
-    } else {
-      if (editingIndex < 0 || editingIndex >= _savedCompanies.length) return;
-      targetIndex = editingIndex;
+      return;
     }
 
-    final wasActive = targetIndex < _savedCompanies.length &&
-        _savedCompanies[targetIndex]['companyName'] == _activeCompanyName;
-    final shouldActivate = _activeCompanyName.isEmpty || wasActive;
     setState(() {
-      if (targetIndex < _savedCompanies.length) {
-        _savedCompanies[targetIndex] = company;
-      } else {
-        _savedCompanies.add(company);
-      }
-      _editingCompanyIndex = targetIndex;
-      if (shouldActivate) {
-        _activeCompanyName = company['companyName']!;
+      _savedCompanies.add(company);
+      if (_activeCompanyName.isEmpty) {
+        _activeCompanyName = companyName;
       }
       _showCompanySaveSuccessMessage = true;
     });
 
-    await prefs.setStringList(
-      'company_profiles_list',
-      _savedCompanies.map((savedCompany) => jsonEncode(savedCompany)).toList(),
-    );
-    await prefs.setString('active_company_name', _activeCompanyName);
+    final prefs = await SharedPreferences.getInstance();
+    await _persistCompanies(prefs);
     final activeCompany = _savedCompanies.firstWhere(
       (savedCompany) =>
-          savedCompany['companyName'] == _activeCompanyName,
+          savedCompany['companyName']?.toString() == _activeCompanyName,
       orElse: () => company,
     );
     await _writeLegacyCompanyDetails(prefs, activeCompany);
@@ -2187,16 +2165,50 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
   }
 
   Future<void> _updateCompanyDetails() async {
-    if (_editingCompanyIndex == null) {
+    final editingIndex = _editingCompanyIndex;
+    if (editingIndex == null ||
+        editingIndex < 0 ||
+        editingIndex >= _savedCompanies.length) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Select a company to update')),
       );
       return;
     }
-    await _saveCompanyDetails();
+    if (!_formKey.currentState!.validate()) return;
+
+    final company = _currentCompanyData();
+    final companyName = company['companyName']?.toString() ?? '';
+    if (companyName.isEmpty) return;
+    final oldCompanyName =
+        _savedCompanies[editingIndex]['companyName']?.toString() ?? '';
+
+    setState(() {
+      _savedCompanies[editingIndex] = company;
+      if (_activeCompanyName == oldCompanyName) {
+        _activeCompanyName = companyName;
+      }
+      _showCompanySaveSuccessMessage = true;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    await _persistCompanies(prefs);
+    final activeCompany = _savedCompanies.firstWhere(
+      (savedCompany) =>
+          savedCompany['companyName']?.toString() == _activeCompanyName,
+      orElse: () => company,
+    );
+    await _writeLegacyCompanyDetails(prefs, activeCompany);
+
+    if (!mounted) return;
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      setState(() {
+        _showCompanySaveSuccessMessage = false;
+      });
+    });
   }
 
-  Map<String, String> _currentCompanyData() {
+  Map<String, dynamic> _currentCompanyData() {
     return {
       'companyName': _companyNameController.text.trim(),
       'businessType': _businessTypeController.text.trim(),
@@ -2211,42 +2223,63 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
     };
   }
 
-  void _applyCompanyToForm(Map<String, String> company) {
-    _companyNameController.text = company['companyName'] ?? '';
+  void _applyCompanyToForm(Map<String, dynamic> company) {
+    _companyNameController.text = company['companyName']?.toString() ?? '';
     _businessTypeController.text =
-        company['businessType']?.trim().isNotEmpty == true
-        ? company['businessType']!
+        company['businessType']?.toString().trim().isNotEmpty == true
+        ? company['businessType'].toString()
         : 'Construction Materials';
-    _ownerNameController.text = company['ownerName'] ?? '';
-    _mobileController.text = company['mobileNumber'] ?? '';
-    _alternateMobileController.text = company['alternateMobile'] ?? '';
-    _addressController.text = company['address'] ?? '';
-    _gstAvailable = company['gstAvailable'] ?? 'No';
-    _gstinController.text = company['gstin'] ?? '';
-    _emailController.text = company['email'] ?? '';
-    _websiteController.text = company['website'] ?? '';
+    _ownerNameController.text = company['ownerName']?.toString() ?? '';
+    _mobileController.text = company['mobileNumber']?.toString() ?? '';
+    _alternateMobileController.text =
+        company['alternateMobile']?.toString() ?? '';
+    _addressController.text = company['address']?.toString() ?? '';
+    _gstAvailable = company['gstAvailable']?.toString() ?? 'No';
+    _gstinController.text = company['gstin']?.toString() ?? '';
+    _emailController.text = company['email']?.toString() ?? '';
+    _websiteController.text = company['website']?.toString() ?? '';
   }
 
   Future<void> _writeLegacyCompanyDetails(
     SharedPreferences prefs,
-    Map<String, String> company,
+    Map<String, dynamic> company,
   ) async {
-    await prefs.setString('company_name', company['companyName'] ?? '');
+    await prefs.setString(
+      'company_name',
+      company['companyName']?.toString() ?? '',
+    );
     await prefs.setString(
       'business_type',
-      company['businessType'] ?? 'Construction Materials',
+      company['businessType']?.toString() ?? 'Construction Materials',
     );
-    await prefs.setString('owner_name', company['ownerName'] ?? '');
-    await prefs.setString('mobile_number', company['mobileNumber'] ?? '');
+    await prefs.setString(
+      'owner_name',
+      company['ownerName']?.toString() ?? '',
+    );
+    await prefs.setString(
+      'mobile_number',
+      company['mobileNumber']?.toString() ?? '',
+    );
     await prefs.setString(
       'alternate_mobile',
-      company['alternateMobile'] ?? '',
+      company['alternateMobile']?.toString() ?? '',
     );
-    await prefs.setString('address', company['address'] ?? '');
-    await prefs.setString('gst_available', company['gstAvailable'] ?? 'No');
-    await prefs.setString('gstin', company['gstin'] ?? '');
-    await prefs.setString('email', company['email'] ?? '');
-    await prefs.setString('website', company['website'] ?? '');
+    await prefs.setString('address', company['address']?.toString() ?? '');
+    await prefs.setString(
+      'gst_available',
+      company['gstAvailable']?.toString() ?? 'No',
+    );
+    await prefs.setString('gstin', company['gstin']?.toString() ?? '');
+    await prefs.setString('email', company['email']?.toString() ?? '');
+    await prefs.setString('website', company['website']?.toString() ?? '');
+  }
+
+  Future<void> _persistCompanies(SharedPreferences prefs) async {
+    await prefs.setStringList(
+      'company_profiles_list',
+      _savedCompanies.map((company) => jsonEncode(company)).toList(),
+    );
+    await prefs.setString('active_company_name', _activeCompanyName);
   }
 
   void _startNewCompany() {
@@ -2280,7 +2313,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
 
   Future<void> _selectCompany(int index) async {
     final company = _savedCompanies[index];
-    final companyName = company['companyName'] ?? '';
+    final companyName = company['companyName']?.toString() ?? '';
     setState(() {
       _editingCompanyIndex = index;
       _activeCompanyName = companyName;
@@ -2293,9 +2326,12 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
   }
 
   Future<void> _deleteCompany(int index) async {
-    final deletedCompanyName = _savedCompanies[index]['companyName'] ?? '';
-    final deletedActiveCompany = deletedCompanyName == _activeCompanyName;
-    final deletedEditingCompany = _editingCompanyIndex == index;
+    if (index < 0 || index >= _savedCompanies.length) return;
+
+    final deletedName =
+        _savedCompanies[index]['companyName']?.toString() ?? '';
+    final deletedWasActive = deletedName == _activeCompanyName;
+    final deletedWasEditing = _editingCompanyIndex == index;
 
     setState(() {
       _savedCompanies.removeAt(index);
@@ -2313,13 +2349,15 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
         _gstinController.clear();
         _emailController.clear();
         _websiteController.clear();
-      } else if (deletedActiveCompany) {
-        _activeCompanyName = _savedCompanies.first['companyName'] ?? '';
+      } else if (deletedWasActive) {
+        _activeCompanyName =
+            _savedCompanies.first['companyName']?.toString() ?? '';
         _editingCompanyIndex = 0;
         _applyCompanyToForm(_savedCompanies.first);
-      } else if (deletedEditingCompany) {
+      } else if (deletedWasEditing) {
         final activeIndex = _savedCompanies.indexWhere(
-          (company) => company['companyName'] == _activeCompanyName,
+          (company) =>
+              company['companyName']?.toString() == _activeCompanyName,
         );
         _editingCompanyIndex = activeIndex >= 0 ? activeIndex : null;
         if (activeIndex >= 0) {
@@ -2332,14 +2370,10 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
     });
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-      'company_profiles_list',
-      _savedCompanies.map((company) => jsonEncode(company)).toList(),
-    );
-    await prefs.setString('active_company_name', _activeCompanyName);
+    await _persistCompanies(prefs);
 
     if (_savedCompanies.isEmpty) {
-      await _writeLegacyCompanyDetails(prefs, const {
+      await _writeLegacyCompanyDetails(prefs, const <String, dynamic>{
         'companyName': '',
         'businessType': 'Construction Materials',
         'ownerName': '',
@@ -2353,7 +2387,8 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
       });
     } else {
       final activeCompany = _savedCompanies.firstWhere(
-        (company) => company['companyName'] == _activeCompanyName,
+        (company) =>
+            company['companyName']?.toString() == _activeCompanyName,
         orElse: () => _savedCompanies.first,
       );
       await _writeLegacyCompanyDetails(prefs, activeCompany);
@@ -2560,7 +2595,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
           _activeCompanyOverlay = null;
           if (_savedCompanies.isEmpty) return;
 
-          final companies = List<Map<String, String>>.from(_savedCompanies);
+          final companies = List<Map<String, dynamic>>.from(_savedCompanies);
           final itemCount = companies.length;
           final popupHeight = itemCount <= 4 ? itemCount * 48.0 : 192.0;
 
@@ -2613,7 +2648,8 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                           itemCount: itemCount,
                           itemBuilder: (context, index) {
                             final companyName =
-                                companies[index]['companyName'] ?? '';
+                                companies[index]['companyName']?.toString() ??
+                                '';
                             return GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
@@ -2648,8 +2684,9 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
           overlay.insert(_activeCompanyOverlay!);
         },
         child: InputDecorator(
-          isEmpty: false,
+          isEmpty: _activeCompanyName.isEmpty,
           decoration: InputDecoration(
+            labelText: 'Active Company',
             filled: true,
             fillColor: Colors.white,
             contentPadding: const EdgeInsets.symmetric(
@@ -2683,7 +2720,8 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
 
   Widget _buildSavedCompanyRow(int index) {
     final company = _savedCompanies[index];
-    final isActive = company['companyName'] == _activeCompanyName;
+    final isActive =
+        company['companyName']?.toString() == _activeCompanyName;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -2702,7 +2740,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  company['companyName'] ?? '',
+                  company['companyName']?.toString() ?? '',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -2713,7 +2751,8 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  company['businessType'] ?? 'Construction Materials',
+                  company['businessType']?.toString() ??
+                      'Construction Materials',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: Color(0xFF64748B)),
@@ -2722,37 +2761,26 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
             ),
           ),
           SizedBox(
-            width: 90,
-            height: 44,
+            width: 76,
+            height: 40,
             child: OutlinedButton(
               onPressed: () => _editCompany(index),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-              ),
               child: const Text('Edit'),
             ),
           ),
           const SizedBox(width: 8),
           SizedBox(
-            width: 120,
-            height: 44,
+            width: 84,
+            height: 40,
             child: FilledButton(
               onPressed: () => _selectCompany(index),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-              ),
-              child: Text(
-                isActive ? 'Active' : 'Select',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
+              child: Text(isActive ? 'Active' : 'Select'),
             ),
           ),
           const SizedBox(width: 8),
           SizedBox(
             width: 90,
-            height: 44,
+            height: 40,
             child: OutlinedButton(
               onPressed: () => _deleteCompany(index),
               style: OutlinedButton.styleFrom(
@@ -2764,7 +2792,6 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                 'Delete',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
               ),
             ),
           ),
@@ -2835,15 +2862,6 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              const Text(
-                                'Active Company',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF334155),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
                               Align(
                                 alignment: Alignment.centerLeft,
                                 child: _buildActiveCompanyDropdown(),

@@ -55,6 +55,21 @@ class _PurchasePageState extends State<PurchasePage> {
   int _lastPurchaseNumber = 0;
   String _purNo = 'PUR-0001';
   String _purchaseDate = '';
+  String _activeCompanyName = '';
+
+  String get _productStorageKey {
+    final company = _activeCompanyName.trim();
+    return company.isEmpty
+        ? 'product_master_list'
+        : 'product_master_list_$company';
+  }
+
+  String get _purchaseLotsStorageKey {
+    final company = _activeCompanyName.trim();
+    return company.isEmpty
+        ? 'purchase_lots'
+        : 'purchase_lots_$company';
+  }
 
   final List<ProductMaster> _availableProducts = [];
   final List<ProductMaster> _filteredProducts = [];
@@ -184,7 +199,8 @@ class _PurchasePageState extends State<PurchasePage> {
 
   Future<void> _loadAvailableProducts() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getStringList('product_master_list') ?? [];
+    _activeCompanyName = (prefs.getString('active_company_name') ?? '').trim();
+    final saved = prefs.getStringList(_productStorageKey) ?? [];
     final productMap = <String, ProductMaster>{};
     for (final entry in saved) {
       final product = ProductMaster.fromJson(
@@ -323,7 +339,7 @@ class _PurchasePageState extends State<PurchasePage> {
     await prefs.setStringList('purchase_history_list', existingHistory);
 
     // Save purchase-wise stock lots
-    final lotSaved = prefs.getStringList('purchase_stock_lot_list') ?? [];
+    final lotSaved = prefs.getStringList(_purchaseLotsStorageKey) ?? [];
     final lotList = lotSaved
         .map(
           (s) =>
@@ -361,12 +377,12 @@ class _PurchasePageState extends State<PurchasePage> {
 
     // Save stock lots
     await prefs.setStringList(
-      'purchase_stock_lot_list',
+      _purchaseLotsStorageKey,
       lotList.map((e) => jsonEncode(e.toJson())).toList(),
     );
 
     // Update Product Master total stock only
-    final prodSaved = prefs.getStringList('product_master_list') ?? [];
+    final prodSaved = prefs.getStringList(_productStorageKey) ?? [];
     final prodList = prodSaved
         .map(
           (s) => ProductMaster.fromJson(jsonDecode(s) as Map<String, dynamic>),
@@ -399,7 +415,7 @@ class _PurchasePageState extends State<PurchasePage> {
     }
 
     await prefs.setStringList(
-      'product_master_list',
+      _productStorageKey,
       prodList.map((p) => jsonEncode(p.toJson())).toList(),
     );
 
@@ -973,6 +989,15 @@ class _PurchasePageState extends State<PurchasePage> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    Text(
+                      'Active Company: ${_activeCompanyName.isEmpty ? 'No company selected' : _activeCompanyName}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: kPrimaryBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         SizedBox(
@@ -5177,11 +5202,11 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
 
   bool get _isEditing => _editingIndex != null;
 
-  String _productStorageKey(String activeCompanyName) {
-    final companyName = activeCompanyName.trim();
-    return companyName.isEmpty
+  String get _productStorageKey {
+    final company = _activeCompanyName.trim();
+    return company.isEmpty
         ? _defaultProductStorageKey
-        : 'products_$companyName';
+        : 'product_master_list_$company';
   }
 
   @override
@@ -5193,10 +5218,8 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
 
   Future<void> _loadProducts() async {
     final prefs = await SharedPreferences.getInstance();
-    final activeCompanyName =
-        (prefs.getString('active_company_name') ?? '').trim();
-    final saved =
-        prefs.getStringList(_productStorageKey(activeCompanyName)) ?? [];
+    _activeCompanyName = (prefs.getString('active_company_name') ?? '').trim();
+    final saved = prefs.getStringList(_productStorageKey) ?? [];
     final productMap = <String, ProductMaster>{};
 
     for (final entry in saved) {
@@ -5217,7 +5240,6 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
     if (!mounted) return;
 
     setState(() {
-      _activeCompanyName = activeCompanyName;
       _products
         ..clear()
         ..addAll(products);
@@ -5275,7 +5297,7 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
   Future<void> _persistProducts() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
-      _productStorageKey(_activeCompanyName),
+      _productStorageKey,
       _products.map((product) => jsonEncode(product.toJson())).toList(),
     );
   }
@@ -5547,7 +5569,7 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
     if (shouldClear != true) return;
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_productStorageKey(_activeCompanyName));
+    await prefs.remove(_productStorageKey);
 
     await _loadProducts();
     _clearForm();

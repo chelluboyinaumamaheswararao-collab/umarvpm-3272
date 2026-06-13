@@ -2129,17 +2129,26 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
     if (!_formKey.currentState!.validate()) return;
     final prefs = await SharedPreferences.getInstance();
     final company = _currentCompanyData();
-    var index = _editingCompanyIndex;
+    final editingIndex = _editingCompanyIndex;
+    late final int targetIndex;
 
-    if (index == null || index < 0 || index >= _savedCompanies.length) {
-      final existingIndex = _savedCompanies.indexWhere(
+    if (editingIndex == null) {
+      final duplicateExists = _savedCompanies.any(
         (savedCompany) =>
             savedCompany['companyName'] == company['companyName'],
       );
-      index = existingIndex >= 0 ? existingIndex : _savedCompanies.length;
+      if (duplicateExists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Company name already exists')),
+        );
+        return;
+      }
+      targetIndex = _savedCompanies.length;
+    } else {
+      if (editingIndex < 0 || editingIndex >= _savedCompanies.length) return;
+      targetIndex = editingIndex;
     }
 
-    final targetIndex = index;
     final wasActive = targetIndex < _savedCompanies.length &&
         _savedCompanies[targetIndex]['companyName'] == _activeCompanyName;
     final shouldActivate = _activeCompanyName.isEmpty || wasActive;
@@ -2175,6 +2184,16 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
         _showCompanySaveSuccessMessage = false;
       });
     });
+  }
+
+  Future<void> _updateCompanyDetails() async {
+    if (_editingCompanyIndex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select a company to update')),
+      );
+      return;
+    }
+    await _saveCompanyDetails();
   }
 
   Map<String, String> _currentCompanyData() {
@@ -2271,6 +2290,74 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('active_company_name', companyName);
     await _writeLegacyCompanyDetails(prefs, company);
+  }
+
+  Future<void> _deleteCompany(int index) async {
+    final deletedCompanyName = _savedCompanies[index]['companyName'] ?? '';
+    final deletedActiveCompany = deletedCompanyName == _activeCompanyName;
+    final deletedEditingCompany = _editingCompanyIndex == index;
+
+    setState(() {
+      _savedCompanies.removeAt(index);
+
+      if (_savedCompanies.isEmpty) {
+        _activeCompanyName = '';
+        _editingCompanyIndex = null;
+        _companyNameController.clear();
+        _businessTypeController.text = 'Construction Materials';
+        _ownerNameController.clear();
+        _mobileController.clear();
+        _alternateMobileController.clear();
+        _addressController.clear();
+        _gstAvailable = 'No';
+        _gstinController.clear();
+        _emailController.clear();
+        _websiteController.clear();
+      } else if (deletedActiveCompany) {
+        _activeCompanyName = _savedCompanies.first['companyName'] ?? '';
+        _editingCompanyIndex = 0;
+        _applyCompanyToForm(_savedCompanies.first);
+      } else if (deletedEditingCompany) {
+        final activeIndex = _savedCompanies.indexWhere(
+          (company) => company['companyName'] == _activeCompanyName,
+        );
+        _editingCompanyIndex = activeIndex >= 0 ? activeIndex : null;
+        if (activeIndex >= 0) {
+          _applyCompanyToForm(_savedCompanies[activeIndex]);
+        }
+      } else if (_editingCompanyIndex != null &&
+          _editingCompanyIndex! > index) {
+        _editingCompanyIndex = _editingCompanyIndex! - 1;
+      }
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      'company_profiles_list',
+      _savedCompanies.map((company) => jsonEncode(company)).toList(),
+    );
+    await prefs.setString('active_company_name', _activeCompanyName);
+
+    if (_savedCompanies.isEmpty) {
+      await _writeLegacyCompanyDetails(prefs, const {
+        'companyName': '',
+        'businessType': 'Construction Materials',
+        'ownerName': '',
+        'mobileNumber': '',
+        'alternateMobile': '',
+        'address': '',
+        'gstAvailable': 'No',
+        'gstin': '',
+        'email': '',
+        'website': '',
+      });
+    } else {
+      final activeCompany = _savedCompanies.firstWhere(
+        (company) => company['companyName'] == _activeCompanyName,
+        orElse: () => _savedCompanies.first,
+      );
+      await _writeLegacyCompanyDetails(prefs, activeCompany);
+    }
   }
 
   @override
@@ -2473,6 +2560,10 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
           _activeCompanyOverlay = null;
           if (_savedCompanies.isEmpty) return;
 
+          final companies = List<Map<String, String>>.from(_savedCompanies);
+          final itemCount = companies.length;
+          final popupHeight = itemCount <= 4 ? itemCount * 48.0 : 192.0;
+
           final RenderBox field =
               _activeCompanyKey.currentContext!.findRenderObject() as RenderBox;
           final OverlayState overlay = Overlay.of(context);
@@ -2503,7 +2594,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                       color: Colors.transparent,
                       child: Container(
                         width: field.size.width,
-                        constraints: const BoxConstraints(maxHeight: 192),
+                        height: popupHeight,
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(14),
@@ -2519,10 +2610,10 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                         clipBehavior: Clip.antiAlias,
                         child: ListView.builder(
                           padding: EdgeInsets.zero,
-                          itemCount: _savedCompanies.length,
+                          itemCount: itemCount,
                           itemBuilder: (context, index) {
                             final companyName =
-                                _savedCompanies[index]['companyName'] ?? '';
+                                companies[index]['companyName'] ?? '';
                             return GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
@@ -2557,9 +2648,8 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
           overlay.insert(_activeCompanyOverlay!);
         },
         child: InputDecorator(
-          isEmpty: _activeCompanyName.isEmpty,
+          isEmpty: false,
           decoration: InputDecoration(
-            labelText: 'Active Company',
             filled: true,
             fillColor: Colors.white,
             contentPadding: const EdgeInsets.symmetric(
@@ -2632,20 +2722,50 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
             ),
           ),
           SizedBox(
-            width: 76,
-            height: 40,
+            width: 90,
+            height: 44,
             child: OutlinedButton(
               onPressed: () => _editCompany(index),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
               child: const Text('Edit'),
             ),
           ),
           const SizedBox(width: 8),
           SizedBox(
-            width: 84,
-            height: 40,
+            width: 120,
+            height: 44,
             child: FilledButton(
               onPressed: () => _selectCompany(index),
-              child: Text(isActive ? 'Active' : 'Select'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              child: Text(
+                isActive ? 'Active' : 'Select',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 90,
+            height: 44,
+            child: OutlinedButton(
+              onPressed: () => _deleteCompany(index),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.redAccent,
+                side: const BorderSide(color: Colors.redAccent),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              child: const Text(
+                'Delete',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
             ),
           ),
         ],
@@ -2715,6 +2835,15 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                                 ),
                               ),
                               const SizedBox(height: 12),
+                              const Text(
+                                'Active Company',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF334155),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
                               Align(
                                 alignment: Alignment.centerLeft,
                                 child: _buildActiveCompanyDropdown(),
@@ -2995,7 +3124,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: OutlinedButton(
-                                            onPressed: _saveCompanyDetails,
+                                            onPressed: _updateCompanyDetails,
                                             style: OutlinedButton.styleFrom(
                                               foregroundColor: kPrimaryBlue,
                                               side: const BorderSide(

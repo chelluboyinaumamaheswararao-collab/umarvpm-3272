@@ -1264,281 +1264,6 @@ class _PurchasePageState extends State<PurchasePage> {
     );
   }
 
-  Widget _removedPurchasePageUi(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Purchase Entry'),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final maxWidth = width > 1000 ? 980.0 : double.infinity;
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Card(
-                      color: kCardBlue,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Purchase Details',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: kPrimaryBlue,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _dateController,
-                                      decoration: InputDecoration(
-                                        labelText: 'Date',
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _purController,
-                                      decoration: InputDecoration(
-                                        labelText: 'Purchase No',
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              TextFormField(
-                                controller: _supplierController,
-                                decoration: InputDecoration(
-                                  labelText: 'Supplier / Party',
-                                  hintText: 'Supplier name',
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                                onChanged: _updateSupplierPartySuggestions,
-                              ),
-                              if (_filteredSupplierParties.isNotEmpty)
-                                const SizedBox(height: 8),
-                              if (_filteredSupplierParties.isNotEmpty)
-                                _buildSupplierPartySuggestions(),
-                              const SizedBox(height: 12),
-                              TextFormField(
-                                controller: _searchController,
-                                decoration: InputDecoration(
-                                  labelText:
-                                      'Search product code or product name',
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  suffixIcon: _searchQuery.isNotEmpty
-                                      ? IconButton(
-                                          icon: const Icon(Icons.clear),
-                                          onPressed: () =>
-                                              _searchController.clear(),
-                                        )
-                                      : null,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(
-                                      color: Colors.grey.shade300,
-                                    ),
-                                  ),
-                                ),
-                                onChanged: _updateSearch,
-                              ),
-                              const SizedBox(height: 8),
-                              if (_searchQuery.isNotEmpty)
-                                Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.grey.shade300,
-                                    ),
-                                  ),
-                                  child: _filteredProducts.isEmpty
-                                      ? const Padding(
-                                          padding: EdgeInsets.all(12),
-                                          child: Text(
-                                            'No products match your search.',
-                                            style: TextStyle(
-                                              color: Color(0xFF64748B),
-                                            ),
-                                          ),
-                                        )
-                                      : Column(
-                                          children: _filteredProducts.map((
-                                            product,
-                                          ) {
-                                            return InkWell(
-                                              onTap: () =>
-                                                  _selectProduct(product),
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 10,
-                                                    ),
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        '${product.productCode} - ${product.productName}',
-                                                        style: const TextStyle(
-                                                          fontSize: 13,
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          color: kPrimaryBlue,
-                                                        ),
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Text(
-                                                      'Stock: ${product.currentStock}',
-                                                      style: const TextStyle(
-                                                        fontSize: 12,
-                                                        color: Color(
-                                                          0xFF64748B,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      height: 150,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: kLightBlue,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Purchase Items',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: kPrimaryBlue,
-                            ),
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                'Add products to start the purchase.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Color(0xFF64748B),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      color: kLightBlue,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Grand Total',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF475467),
-                                  ),
-                                ),
-                                Text(
-                                  '₹${_grandTotal.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: kPrimaryBlue,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 48,
-                              child: FilledButton(
-                                onPressed: _savePurchase,
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: kPrimaryBlue,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Save Purchase',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 }
 
 const Color kPrimaryBlue = Color(0xFF1565C0);
@@ -5117,42 +4842,6 @@ class _PartiesPageState extends State<PartiesPage> {
     );
   }
 
-  Widget _dropdownField({
-    required String label,
-    required double width,
-    required String value,
-    required List<String> options,
-    required ValueChanged<String> onChanged,
-  }) {
-    return SizedBox(
-      width: width,
-      height: 52,
-      child: DropdownButtonFormField<String>(
-        key: ValueKey('$label-$value'),
-        initialValue: value,
-        isExpanded: true,
-        decoration: InputDecoration(
-          labelText: label,
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 12,
-          ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        items: options
-            .map(
-              (option) => DropdownMenuItem(value: option, child: Text(option)),
-            )
-            .toList(),
-        onChanged: (value) {
-          if (value == null) return;
-          onChanged(value);
-        },
-      ),
-    );
-  }
 }
 
 class SectionPage extends StatelessWidget {
@@ -5263,8 +4952,6 @@ class _InventoryPageState extends State<InventoryPage> {
         ..addAll(_stockLots);
     });
 
-    debugPrint('InventoryPage loaded products: ${_products.length}');
-    debugPrint('InventoryPage loaded stock lots: ${_stockLots.length}');
   }
 
   void _updateSearch(String query) {
@@ -5299,12 +4986,6 @@ class _InventoryPageState extends State<InventoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final inventoryProductCodes = _products
-        .map((product) => product.productCode)
-        .join(', ');
-    debugPrint(
-      'InventoryPage build displaying ${_products.length} products: [$inventoryProductCodes]',
-    );
     return Scaffold(
       appBar: AppBar(title: const Text('Inventory')),
       body: SafeArea(
@@ -5463,6 +5144,9 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
   final List<ProductMaster> _products = [];
   int? _editingIndex;
   bool _isDuplicateCode = false;
+  String _activeCompanyName = '';
+
+  static const String _defaultProductStorageKey = 'product_master_list';
 
   static const List<String> _categoryOptions = [
     'Tiles',
@@ -5493,6 +5177,13 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
 
   bool get _isEditing => _editingIndex != null;
 
+  String _productStorageKey(String activeCompanyName) {
+    final companyName = activeCompanyName.trim();
+    return companyName.isEmpty
+        ? _defaultProductStorageKey
+        : 'products_$companyName';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -5502,7 +5193,10 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
 
   Future<void> _loadProducts() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getStringList('product_master_list') ?? [];
+    final activeCompanyName =
+        (prefs.getString('active_company_name') ?? '').trim();
+    final saved =
+        prefs.getStringList(_productStorageKey(activeCompanyName)) ?? [];
     final productMap = <String, ProductMaster>{};
 
     for (final entry in saved) {
@@ -5523,6 +5217,7 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
     if (!mounted) return;
 
     setState(() {
+      _activeCompanyName = activeCompanyName;
       _products
         ..clear()
         ..addAll(products);
@@ -5580,7 +5275,7 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
   Future<void> _persistProducts() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
-      'product_master_list',
+      _productStorageKey(_activeCompanyName),
       _products.map((product) => jsonEncode(product.toJson())).toList(),
     );
   }
@@ -5676,9 +5371,6 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
       });
       await _persistProducts();
       await _loadProducts();
-      debugPrint(
-        'ProductMasterPage after save (update) saved ${_products.length} products: ${_products.map((p) => p.productCode).join(", ")}',
-      );
       if (!mounted) return;
       _clearForm();
       final overlay = Overlay.of(context);
@@ -5720,9 +5412,6 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
     });
     await _persistProducts();
     await _loadProducts();
-    debugPrint(
-      'ProductMasterPage after save (create) saved ${_products.length} products: ${_products.map((p) => p.productCode).join(", ")}',
-    );
     if (!mounted) return;
     _clearForm();
     final overlay = Overlay.of(context);
@@ -5858,7 +5547,7 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
     if (shouldClear != true) return;
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('product_master_list');
+    await prefs.remove(_productStorageKey(_activeCompanyName));
 
     await _loadProducts();
     _clearForm();
@@ -6151,12 +5840,6 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
 
   @override
   Widget build(BuildContext context) {
-    final savedProductsCodes = _products
-        .map((product) => product.productCode)
-        .join(', ');
-    debugPrint(
-      'ProductMasterPage Saved Products section count=${_products.length}, codes=[$savedProductsCodes]',
-    );
     return Scaffold(
       appBar: AppBar(title: const Text('Product Master'), elevation: 0),
       body: LayoutBuilder(
@@ -6183,8 +5866,8 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
                         padding: const EdgeInsets.all(18),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
+                          children: [
+                            const Text(
                               'Product Master',
                               style: TextStyle(
                                 fontSize: 22,
@@ -6192,8 +5875,17 @@ class _ProductMasterPageState extends State<ProductMasterPage> {
                                 color: kPrimaryBlue,
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
+                              'Active Company: ${_activeCompanyName.isEmpty ? 'No company selected' : _activeCompanyName}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: kPrimaryBlue,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
                               'Manage products ready for billing, inventory alerts, and future sales search.',
                               style: TextStyle(
                                 fontSize: 14,
@@ -9427,30 +9119,6 @@ class _NewSalePageState extends State<NewSalePage> {
     );
   }
 
-  Widget _fixedField({
-    required double width,
-    required String label,
-    TextEditingController? controller,
-    String? hint,
-    TextInputType keyboardType = TextInputType.text,
-    bool readOnly = false,
-    void Function(String)? onChanged,
-    String? Function(String?)? validator,
-  }) {
-    return SizedBox(
-      width: width,
-      height: 58,
-      child: _buildField(
-        label: label,
-        controller: controller,
-        hint: hint,
-        keyboardType: keyboardType,
-        readOnly: readOnly,
-        onChanged: onChanged,
-        validator: validator,
-      ),
-    );
-  }
 
   Widget _buildCustomerPartySuggestions() {
     return Container(
@@ -10059,43 +9727,6 @@ class _NewSalePageState extends State<NewSalePage> {
     );
   }
 
-  Widget _saleTotalDisplayBox(
-    String label,
-    String value, {
-    required double width,
-  }) {
-    return Container(
-      width: width,
-      height: 96,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: kPrimaryBlue,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   void dispose() {

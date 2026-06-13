@@ -588,6 +588,15 @@ class _PurchasePageState extends State<PurchasePage> {
 
     Widget unitField(PurchaseItem item) {
       final GlobalKey unitDropdownKey = GlobalKey();
+      final unitOptions = [
+        'Nos',
+        'Bag',
+        'Box',
+        'Feet',
+        'Kg',
+        'Liter',
+        'Other',
+      ];
 
       return SizedBox(
         key: unitDropdownKey,
@@ -618,16 +627,15 @@ class _PurchasePageState extends State<PurchasePage> {
                     ),
                     Positioned(
                       left: position.dx,
-                      top: position.dy + button.size.height -12,
+                      top: position.dy + button.size.height - 12,
                       width: button.size.width,
                       child: Material(
                         color: Colors.transparent,
                         child: Container(
                           width: button.size.width,
-                          constraints: const BoxConstraints(maxHeight: 160),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(14),
                             border: Border.all(color: Colors.grey.shade300),
                             boxShadow: const [
                               BoxShadow(
@@ -641,15 +649,7 @@ class _PurchasePageState extends State<PurchasePage> {
                           child: ListView(
                             padding: EdgeInsets.zero,
                             shrinkWrap: true,
-                            children: const [
-                              'Nos',
-                              'Bag',
-                              'Box',
-                              'Feet',
-                              'Kg',
-                              'Liter',
-                              'Other',
-                            ].map((unit) {
+                            children: unitOptions.map((unit) {
                               return GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () {
@@ -661,9 +661,8 @@ class _PurchasePageState extends State<PurchasePage> {
                                 child: Container(
                                   width: button.size.width,
                                   height: 40,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 10),
                                   alignment: Alignment.centerLeft,
                                   child: Text(unit),
                                 ),
@@ -2337,7 +2336,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
       child: SizedBox(
         key: _activeCompanyKey,
         width: double.infinity,
-        height: 48,
+        height: 58,
         child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
@@ -2433,36 +2432,59 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
 
           overlay.insert(_activeCompanyOverlay!);
         },
-        child: InputDecorator(
-          isEmpty: _activeCompanyName.isEmpty,
-          decoration: InputDecoration(
-            labelText: 'Active Company',
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 10,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _activeCompanyName.isEmpty
-                      ? 'No saved companies'
-                      : _activeCompanyName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+        child: _savedCompanies.isEmpty
+            ? Container(
+                height: 58,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'No saved companies',
+                        style: const TextStyle(fontSize: 16, color: Colors.grey),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                  ],
+                ),
+              )
+            : InputDecorator(
+                isEmpty: _activeCompanyName.isEmpty,
+                decoration: InputDecoration(
+                  labelText: 'Active Company',
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _activeCompanyName.isEmpty
+                            ? 'No saved companies'
+                            : _activeCompanyName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Icon(Icons.arrow_drop_down),
+                  ],
                 ),
               ),
-              const Icon(Icons.arrow_drop_down),
-            ],
-          ),
-        ),
         ),
       ),
     );
@@ -6691,6 +6713,7 @@ class SalesReturnPage extends StatefulWidget {
 
 class _SalesReturnPageState extends State<SalesReturnPage> {
   final _searchController = TextEditingController();
+  String _activeCompanyName = '';
   final List<SaleHistoryEntry> _history = [];
   final List<SaleHistoryEntry> _filteredHistory = [];
   final List<ReturnItem> _returnItems = [];
@@ -6708,8 +6731,13 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
     _returnDate = _formatDate(DateTime.now());
     _returnDateController.text = _returnDate;
     _searchController.addListener(() => _updateSearch(_searchController.text));
-    _loadHistory();
-    _loadLastReturnNumber();
+    _initializePage();
+  }
+
+  Future<void> _initializePage() async {
+    await _loadActiveCompany();
+    await _loadHistory();
+    await _loadLastReturnNumber();
   }
 
   String _formatDate(DateTime date) {
@@ -6720,6 +6748,27 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
   }
 
   String _formatReturnNo(int value) => 'SR-${value.toString().padLeft(4, "0")}';
+
+  String get _productStorageKey {
+    final company = _activeCompanyName.trim();
+    if (company.isEmpty) return 'product_master_list';
+    return 'product_master_list_$company';
+  }
+
+  String get _purchaseLotsStorageKey {
+    final company = _activeCompanyName.trim();
+    if (company.isEmpty) return 'purchase_lots';
+    return 'purchase_lots_$company';
+  }
+
+  Future<void> _loadActiveCompany() async {
+    final prefs = await SharedPreferences.getInstance();
+    final activeCompanyName = (prefs.getString('active_company_name') ?? '').trim();
+    if (!mounted) return;
+    setState(() {
+      _activeCompanyName = activeCompanyName;
+    });
+  }
 
   Future<void> _loadLastReturnNumber() async {
     final prefs = await SharedPreferences.getInstance();
@@ -6814,7 +6863,7 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
 
     final prefs = await SharedPreferences.getInstance();
 
-    final lotSaved = prefs.getStringList('purchase_stock_lot_list') ?? [];
+    final lotSaved = prefs.getStringList(_purchaseLotsStorageKey) ?? [];
     final lotList = lotSaved
         .map(
           (entry) => PurchaseStockLot.fromJson(
@@ -6852,7 +6901,7 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
         returnQtyByCode[code] = 0;
       }
       await prefs.setStringList(
-        'purchase_stock_lot_list',
+        _purchaseLotsStorageKey,
         lotList.map((lot) => jsonEncode(lot.toJson())).toList(),
       );
     }
@@ -6864,7 +6913,7 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
       stockByProduct[code] = (stockByProduct[code] ?? 0) + lot.remainingQty;
     }
 
-    final productsSaved = prefs.getStringList('product_master_list') ?? [];
+    final productsSaved = prefs.getStringList(_productStorageKey) ?? [];
     final products = productsSaved
         .map(
           (entry) =>
@@ -6887,7 +6936,7 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
         })
         .toList();
     await prefs.setStringList(
-      'product_master_list',
+      _productStorageKey,
       products.map((product) => jsonEncode(product.toJson())).toList(),
     );
 
@@ -7012,6 +7061,15 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: kPrimaryBlue,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Active Company: ${_activeCompanyName.isEmpty ? 'No company selected' : _activeCompanyName}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
                         ),
                       ),
                       const SizedBox(height: 12),

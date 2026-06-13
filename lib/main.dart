@@ -8623,11 +8623,25 @@ class _NewSalePageState extends State<NewSalePage> {
   int _lastEstimateNumber = 0;
   String _billNo = '';
   String _saleDate = '';
+  String _activeCompanyName = '';
+  String _saleStatusMessage = '';
   final List<ProductMaster> _availableProducts = [];
   final List<ProductMaster> _filteredProducts = [];
   final List<SaleEntry> _saleItems = [];
   final List<Map<String, String>> _customerParties = [];
   final List<Map<String, String>> _filteredCustomerParties = [];
+
+  String get _productStorageKey {
+    final company = _activeCompanyName.trim();
+    if (company.isEmpty) return 'product_master_list';
+    return 'product_master_list_$company';
+  }
+
+  String get _purchaseLotsStorageKey {
+    final company = _activeCompanyName.trim();
+    if (company.isEmpty) return 'purchase_lots';
+    return 'purchase_lots_$company';
+  }
 
   String get _saleStockDisplay {
     if (_saleItems.isEmpty) return '-';
@@ -8716,7 +8730,10 @@ class _NewSalePageState extends State<NewSalePage> {
 
   Future<void> _loadAvailableProducts() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getStringList('product_master_list') ?? [];
+    final activeCompanyName =
+        (prefs.getString('active_company_name') ?? '').trim();
+    _activeCompanyName = activeCompanyName;
+    final saved = prefs.getStringList(_productStorageKey) ?? [];
     final productMap = <String, ProductMaster>{};
 
     for (final entry in saved) {
@@ -8728,7 +8745,9 @@ class _NewSalePageState extends State<NewSalePage> {
       productMap[key] = product;
     }
 
+    if (!mounted) return;
     setState(() {
+      _activeCompanyName = activeCompanyName;
       _availableProducts.clear();
       _availableProducts.addAll(productMap.values);
       _filteredProducts.clear();
@@ -8903,7 +8922,7 @@ class _NewSalePageState extends State<NewSalePage> {
   Future<void> _decrementStockForSale() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final savedLots = prefs.getStringList('purchase_stock_lot_list') ?? [];
+    final savedLots = prefs.getStringList(_purchaseLotsStorageKey) ?? [];
     final lots = savedLots
         .map(
           (entry) => PurchaseStockLot.fromJson(
@@ -8949,7 +8968,7 @@ class _NewSalePageState extends State<NewSalePage> {
       }
 
       await prefs.setStringList(
-        'purchase_stock_lot_list',
+        _purchaseLotsStorageKey,
         updatedLots.map((lot) => jsonEncode(lot.toJson())).toList(),
       );
 
@@ -8960,7 +8979,7 @@ class _NewSalePageState extends State<NewSalePage> {
         stockByProduct[code] = (stockByProduct[code] ?? 0) + lot.remainingQty;
       }
 
-      final savedProducts = prefs.getStringList('product_master_list') ?? [];
+      final savedProducts = prefs.getStringList(_productStorageKey) ?? [];
       final updatedProducts = savedProducts
           .map(
             (entry) => ProductMaster.fromJson(
@@ -8985,7 +9004,7 @@ class _NewSalePageState extends State<NewSalePage> {
           .toList();
 
       await prefs.setStringList(
-        'product_master_list',
+        _productStorageKey,
         updatedProducts.map((product) => jsonEncode(product.toJson())).toList(),
       );
     }
@@ -9797,16 +9816,32 @@ class _NewSalePageState extends State<NewSalePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                      const Text(
-                        'Sale Details',
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
-                          color: kPrimaryBlue,
-                        ),
+                      Row(
+                        children: [
+                          const Text(
+                            'Sale Details',
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                              color: kPrimaryBlue,
+                            ),
+                          ),
+                          const SizedBox(width: 18),
+                          Text(
+                            'Active Company: ${_activeCompanyName.isEmpty ? 'No company selected' : _activeCompanyName}',
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 18),
                       Row(
@@ -10137,11 +10172,89 @@ class _NewSalePageState extends State<NewSalePage> {
                         ),
                       const SizedBox(height: 12),
                       SizedBox(
-                        width: 140,
+                        width: 1436,
                         height: 48,
-                        child: OutlinedButton(
-                          onPressed: () {},
-                          child: const Text('+ Add Item'),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _saleStatusMessage,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: kPrimaryBlue,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            const Text(
+                              'Grand Total',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF475467),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              '₹${_grandTotal.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: kPrimaryBlue,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            SizedBox(
+                              width: 288,
+                              height: 44,
+                              child: FilledButton(
+                                onPressed: () async {
+                                  if (_saleItems.isEmpty) {
+                                    setState(() {
+                                      _saleStatusMessage =
+                                          'Add products before saving sale';
+                                    });
+                                    await Future<void>.delayed(
+                                      const Duration(seconds: 2),
+                                    );
+                                    if (!mounted) return;
+                                    setState(() {
+                                      _saleStatusMessage = '';
+                                    });
+                                    return;
+                                  }
+                                  await _saveSaleAndPrepareNext();
+                                  if (!mounted) return;
+                                  setState(() {
+                                    _saleStatusMessage = _successMessage;
+                                  });
+                                  await Future<void>.delayed(
+                                    const Duration(seconds: 2),
+                                  );
+                                  if (!mounted) return;
+                                  setState(() {
+                                    _saleStatusMessage = '';
+                                  });
+                                },
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: kPrimaryBlue,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Save Sale',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

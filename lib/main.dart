@@ -497,9 +497,9 @@ class _PurchasePageState extends State<PurchasePage> {
 
   Widget _buildSupplierPartySuggestions() {
     return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(maxHeight: 220),
-      decoration: BoxDecoration(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxHeight: 200),
+          decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade300),
@@ -6447,6 +6447,13 @@ class SaleEntry {
   int qty;
   String discountType;
   String taxType = 'Inc';
+  
+  // Batch/Lot selection fields
+  List<PurchaseStockLot> availableLots = [];
+  String? selectedLotNo;
+  String? selectedPurchaseNo;
+  String? selectedPurchaseDate;
+  int selectedBatchAvailableQty = 0;
 
   SaleEntry({required this.product, this.qty = 1, this.discountType = '₹'})
     : qtyController = TextEditingController(text: qty.toString()),
@@ -6484,6 +6491,10 @@ class SaleHistoryProduct {
   final String discountType;
   final double discountValue;
   final double itemTotal;
+  final String selectedLotNo;
+  final String selectedPurchaseNo;
+  final String selectedPurchaseDate;
+  final double selectedPurchaseRate;
 
   SaleHistoryProduct({
     required this.productCode,
@@ -6494,6 +6505,10 @@ class SaleHistoryProduct {
     required this.discountType,
     required this.discountValue,
     required this.itemTotal,
+    this.selectedLotNo = '',
+    this.selectedPurchaseNo = '',
+    this.selectedPurchaseDate = '',
+    this.selectedPurchaseRate = 0.0,
   });
 
   Map<String, dynamic> toJson() {
@@ -6506,6 +6521,10 @@ class SaleHistoryProduct {
       'discountType': discountType,
       'discountValue': discountValue,
       'itemTotal': itemTotal,
+      'selectedLotNo': selectedLotNo,
+      'selectedPurchaseNo': selectedPurchaseNo,
+      'selectedPurchaseDate': selectedPurchaseDate,
+      'selectedPurchaseRate': selectedPurchaseRate,
     };
   }
 
@@ -6519,6 +6538,11 @@ class SaleHistoryProduct {
       discountType: json['discountType'] as String,
       discountValue: (json['discountValue'] as num).toDouble(),
       itemTotal: (json['itemTotal'] as num).toDouble(),
+      selectedLotNo: json['selectedLotNo'] as String? ?? '',
+      selectedPurchaseNo: json['selectedPurchaseNo'] as String? ?? '',
+      selectedPurchaseDate: json['selectedPurchaseDate'] as String? ?? '',
+      selectedPurchaseRate:
+          (json['selectedPurchaseRate'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
@@ -6873,9 +6897,42 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
         .toList();
 
     final returnQtyByCode = <String, int>{};
+    var updatedLotList = false;
     for (final item in _returnItems.where((item) => item.returnQty > 0)) {
       final code = item.item.productCode.trim().toLowerCase();
       if (code.isEmpty) continue;
+
+      final selectedLotNo = item.item.selectedLotNo.trim();
+      final selectedPurchaseNo = item.item.selectedPurchaseNo.trim();
+      if (selectedLotNo.isNotEmpty || selectedPurchaseNo.isNotEmpty) {
+        final lotIndex = lotList.indexWhere((lot) {
+          final lotCode = lot.productCode.trim().toLowerCase();
+          if (lotCode != code) return false;
+          if (selectedLotNo.isNotEmpty) {
+            return lot.lotNo == selectedLotNo;
+          }
+          return lot.purchaseNo == selectedPurchaseNo;
+        });
+        if (lotIndex >= 0) {
+          final lot = lotList[lotIndex];
+          lotList[lotIndex] = PurchaseStockLot(
+            lotNo: lot.lotNo,
+            purchaseNo: lot.purchaseNo,
+            purchaseDate: lot.purchaseDate,
+            supplierName: lot.supplierName,
+            productCode: lot.productCode,
+            productName: lot.productName,
+            unit: lot.unit,
+            qty: lot.qty,
+            remainingQty: lot.remainingQty + item.returnQty,
+            purchaseRate: lot.purchaseRate,
+          );
+          updatedLotList = true;
+          continue;
+        }
+      }
+
+      // Fallback for older history entries without batch reference.
       returnQtyByCode[code] = (returnQtyByCode[code] ?? 0) + item.returnQty;
     }
 
@@ -6899,7 +6956,11 @@ class _SalesReturnPageState extends State<SalesReturnPage> {
           purchaseRate: lot.purchaseRate,
         );
         returnQtyByCode[code] = 0;
+        updatedLotList = true;
       }
+    }
+
+    if (updatedLotList) {
       await prefs.setStringList(
         _purchaseLotsStorageKey,
         lotList.map((lot) => jsonEncode(lot.toJson())).toList(),
@@ -8728,6 +8789,7 @@ class _NewSalePageState extends State<NewSalePage> {
   final _billController = TextEditingController();
   String _saleType = 'Cash';
   String _searchQuery = '';
+  String _selectedCustomerName = '';
   int _lastBillNumber = 0;
   int _lastEstimateNumber = 0;
   String _billNo = '';
@@ -8813,6 +8875,10 @@ class _NewSalePageState extends State<NewSalePage> {
 
   void _updateCustomerPartySuggestions(String query) {
     final text = query.trim().toLowerCase();
+    if (_selectedCustomerName.isNotEmpty &&
+        _selectedCustomerName.toLowerCase() != text) {
+      _selectedCustomerName = '';
+    }
     setState(() {
       if (text.isEmpty) {
         _filteredCustomerParties.clear();
@@ -8831,8 +8897,13 @@ class _NewSalePageState extends State<NewSalePage> {
   }
 
   void _selectCustomerParty(Map<String, String> party) {
+    final name = party['partyName'] ?? '';
     setState(() {
-      _customerController.text = party['partyName'] ?? '';
+      _selectedCustomerName = name;
+      _customerController.value = TextEditingValue(
+        text: _selectedCustomerName,
+        selection: TextSelection.collapsed(offset: _selectedCustomerName.length),
+      );
       _filteredCustomerParties.clear();
     });
   }
@@ -8895,7 +8966,9 @@ class _NewSalePageState extends State<NewSalePage> {
         entry.qty += 1;
         entry.qtyController.text = entry.qty.toString();
       } else {
-        _saleItems.add(SaleEntry(product: product));
+        final newEntry = SaleEntry(product: product);
+        _saleItems.add(newEntry);
+        _loadAvailableLotsForProduct(product.productCode, newEntry);
       }
       _searchController.clear();
       _filteredProducts.clear();
@@ -8903,8 +8976,39 @@ class _NewSalePageState extends State<NewSalePage> {
     });
   }
 
+  Future<void> _loadAvailableLotsForProduct(String productCode, SaleEntry entry) async {
+    final prefs = await SharedPreferences.getInstance();
+    final lotSaved = prefs.getStringList(_purchaseLotsStorageKey) ?? [];
+    final lots = lotSaved
+        .map((s) =>
+            PurchaseStockLot.fromJson(jsonDecode(s) as Map<String, dynamic>))
+        .toList();
+    final availableLots = lots
+        .where((lot) =>
+            lot.productCode.trim().toLowerCase() ==
+                productCode.trim().toLowerCase() &&
+            lot.remainingQty > 0)
+        .toList();
+    if (availableLots.isNotEmpty && mounted) {
+      setState(() {
+        entry.availableLots = availableLots;
+        if (availableLots.length == 1) {
+          entry.selectedLotNo = availableLots[0].lotNo;
+          entry.selectedPurchaseNo = availableLots[0].purchaseNo;
+          entry.selectedPurchaseDate = availableLots[0].purchaseDate;
+          entry.selectedBatchAvailableQty = availableLots[0].remainingQty;
+        }
+      });
+    }
+  }
+
   void _setQuantity(SaleEntry item, int value) {
-    item.qty = value < 1 ? 1 : value;
+    // If batch is selected, cap quantity to batch available qty
+    final maxQty = item.selectedBatchAvailableQty > 0
+        ? item.selectedBatchAvailableQty
+        : item.product.currentStock;
+
+    item.qty = value < 1 ? 1 : (value > maxQty ? maxQty : value);
     final text = item.qty.toString();
     item.qtyController.value = TextEditingValue(
       text: text,
@@ -8919,7 +9023,13 @@ class _NewSalePageState extends State<NewSalePage> {
       setState(() {});
       return;
     }
-    item.qty = quantity;
+
+    // If batch is selected, cap quantity to batch available qty
+    final maxQty = item.selectedBatchAvailableQty > 0
+        ? item.selectedBatchAvailableQty
+        : item.product.currentStock;
+
+    item.qty = quantity > maxQty ? maxQty : quantity;
     setState(() {});
   }
 
@@ -9015,6 +9125,7 @@ class _NewSalePageState extends State<NewSalePage> {
     setState(() {
       _saleItems.clear();
       _customerController.clear();
+      _selectedCustomerName = '';
       _filteredCustomerParties.clear();
       _paidController.text = '0';
       _searchController.clear();
@@ -9040,23 +9151,26 @@ class _NewSalePageState extends State<NewSalePage> {
         )
         .toList();
 
-    final saleQtyByCode = <String, int>{};
+    // Collect sale items grouped by lot (if selected) or by product code (FIFO fallback)
+    final saleByLot = <String, int>{}; // lotNo -> qty to reduce
+    final saleByProductCode = <String, int>{}; // productCode -> qty to reduce
+
     for (final item in _saleItems) {
-      final code = item.product.productCode.trim().toLowerCase();
-      if (code.isEmpty) continue;
-      saleQtyByCode[code] = (saleQtyByCode[code] ?? 0) + item.qty;
+      if (item.selectedLotNo != null && item.selectedLotNo!.isNotEmpty) {
+        saleByLot[item.selectedLotNo!] = (saleByLot[item.selectedLotNo!] ?? 0) + item.qty;
+      } else {
+        final code = item.product.productCode.trim().toLowerCase();
+        saleByProductCode[code] = (saleByProductCode[code] ?? 0) + item.qty;
+      }
     }
 
-    if (saleQtyByCode.isNotEmpty) {
+    if (saleByLot.isNotEmpty || saleByProductCode.isNotEmpty) {
       final updatedLots = <PurchaseStockLot>[];
+      
       for (final lot in lots) {
-        final code = lot.productCode.trim().toLowerCase();
-        final remainingSaleQty = saleQtyByCode[code] ?? 0;
-        if (remainingSaleQty > 0 && lot.remainingQty > 0) {
-          final reduction = remainingSaleQty > lot.remainingQty
-              ? lot.remainingQty
-              : remainingSaleQty;
-          saleQtyByCode[code] = remainingSaleQty - reduction;
+        if (saleByLot.containsKey(lot.lotNo) && saleByLot[lot.lotNo]! > 0) {
+          final reduction = saleByLot[lot.lotNo]!;
+          saleByLot[lot.lotNo] = 0;
           updatedLots.add(
             PurchaseStockLot(
               lotNo: lot.lotNo,
@@ -9067,7 +9181,7 @@ class _NewSalePageState extends State<NewSalePage> {
               productName: lot.productName,
               unit: lot.unit,
               qty: lot.qty,
-              remainingQty: lot.remainingQty - reduction,
+              remainingQty: (lot.remainingQty - reduction).clamp(0, lot.qty),
               purchaseRate: lot.purchaseRate,
             ),
           );
@@ -9076,69 +9190,188 @@ class _NewSalePageState extends State<NewSalePage> {
         }
       }
 
-      await prefs.setStringList(
-        _purchaseLotsStorageKey,
-        updatedLots.map((lot) => jsonEncode(lot.toJson())).toList(),
-      );
-
-      final stockByProduct = <String, int>{};
-      for (final lot in updatedLots) {
-        final code = lot.productCode.trim().toLowerCase();
-        if (code.isEmpty) continue;
-        stockByProduct[code] = (stockByProduct[code] ?? 0) + lot.remainingQty;
-      }
-
-      final savedProducts = prefs.getStringList(_productStorageKey) ?? [];
-      final updatedProducts = savedProducts
-          .map(
-            (entry) => ProductMaster.fromJson(
-              jsonDecode(entry) as Map<String, dynamic>,
-            ),
-          )
-          .map((product) {
-            final code = product.productCode.trim().toLowerCase();
-            final currentStock = stockByProduct[code] ?? 0;
-            return ProductMaster(
-              productCode: product.productCode,
-              productName: product.productName,
-              category: product.category,
-              unit: product.unit,
-              purchasePrice: product.purchasePrice,
-              mrpPrice: product.mrpPrice,
-              defaultSalePrice: product.defaultSalePrice,
-              minimumStockAlert: product.minimumStockAlert,
-              currentStock: currentStock,
+      // Handle FIFO reductions for products without selected lots
+      if (saleByProductCode.isNotEmpty) {
+        final finalLots = <PurchaseStockLot>[];
+        for (final lot in updatedLots) {
+          final code = lot.productCode.trim().toLowerCase();
+          final remainingSaleQty = saleByProductCode[code] ?? 0;
+          if (remainingSaleQty > 0 && lot.remainingQty > 0) {
+            final reduction = remainingSaleQty > lot.remainingQty
+                ? lot.remainingQty
+                : remainingSaleQty;
+            saleByProductCode[code] = remainingSaleQty - reduction;
+            finalLots.add(
+              PurchaseStockLot(
+                lotNo: lot.lotNo,
+                purchaseNo: lot.purchaseNo,
+                purchaseDate: lot.purchaseDate,
+                supplierName: lot.supplierName,
+                productCode: lot.productCode,
+                productName: lot.productName,
+                unit: lot.unit,
+                qty: lot.qty,
+                remainingQty: lot.remainingQty - reduction,
+                purchaseRate: lot.purchaseRate,
+              ),
             );
-          })
-          .toList();
+          } else {
+            finalLots.add(lot);
+          }
+        }
+        
+        await prefs.setStringList(
+          _purchaseLotsStorageKey,
+          finalLots.map((lot) => jsonEncode(lot.toJson())).toList(),
+        );
+        
+        final stockByProduct = <String, int>{};
+        for (final lot in finalLots) {
+          final code = lot.productCode.trim().toLowerCase();
+          if (code.isEmpty) continue;
+          stockByProduct[code] = (stockByProduct[code] ?? 0) + lot.remainingQty;
+        }
 
-      await prefs.setStringList(
-        _productStorageKey,
-        updatedProducts.map((product) => jsonEncode(product.toJson())).toList(),
-      );
+        final savedProducts = prefs.getStringList(_productStorageKey) ?? [];
+        final updatedProducts = savedProducts
+            .map(
+              (entry) => ProductMaster.fromJson(
+                jsonDecode(entry) as Map<String, dynamic>,
+              ),
+            )
+            .map((product) {
+              final code = product.productCode.trim().toLowerCase();
+              final currentStock = stockByProduct[code] ?? 0;
+              return ProductMaster(
+                productCode: product.productCode,
+                productName: product.productName,
+                category: product.category,
+                unit: product.unit,
+                purchasePrice: product.purchasePrice,
+                mrpPrice: product.mrpPrice,
+                defaultSalePrice: product.defaultSalePrice,
+                minimumStockAlert: product.minimumStockAlert,
+                currentStock: currentStock,
+              );
+            })
+            .toList();
+
+        await prefs.setStringList(
+          _productStorageKey,
+          updatedProducts.map((product) => jsonEncode(product.toJson())).toList(),
+        );
+      } else {
+        await prefs.setStringList(
+          _purchaseLotsStorageKey,
+          updatedLots.map((lot) => jsonEncode(lot.toJson())).toList(),
+        );
+
+        final stockByProduct = <String, int>{};
+        for (final lot in updatedLots) {
+          final code = lot.productCode.trim().toLowerCase();
+          if (code.isEmpty) continue;
+          stockByProduct[code] = (stockByProduct[code] ?? 0) + lot.remainingQty;
+        }
+
+        final savedProducts = prefs.getStringList(_productStorageKey) ?? [];
+        final updatedProducts = savedProducts
+            .map(
+              (entry) => ProductMaster.fromJson(
+                jsonDecode(entry) as Map<String, dynamic>,
+              ),
+            )
+            .map((product) {
+              final code = product.productCode.trim().toLowerCase();
+              final currentStock = stockByProduct[code] ?? 0;
+              return ProductMaster(
+                productCode: product.productCode,
+                productName: product.productName,
+                category: product.category,
+                unit: product.unit,
+                purchasePrice: product.purchasePrice,
+                mrpPrice: product.mrpPrice,
+                defaultSalePrice: product.defaultSalePrice,
+                minimumStockAlert: product.minimumStockAlert,
+                currentStock: currentStock,
+              );
+            })
+            .toList();
+
+        await prefs.setStringList(
+          _productStorageKey,
+          updatedProducts.map((product) => jsonEncode(product.toJson())).toList(),
+        );
+      }
     }
   }
 
   Future<void> _saveHistoryEntry() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getStringList('sales_history') ?? [];
+    final customerName = _selectedCustomerName.isNotEmpty
+        ? _selectedCustomerName.trim()
+        : _customerController.text.trim();
     final entry = SaleHistoryEntry(
       date: _dateController.text.trim(),
       billNo: _billController.text.trim(),
       saleType: _saleType,
-      customer: _customerController.text.trim(),
+      customer: customerName,
       items: _saleItems
           .map(
-            (item) => SaleHistoryProduct(
-              productCode: item.product.productCode,
-              productName: item.product.productName,
-              qty: item.qty,
-              mrp: item.product.mrpPrice,
-              salePrice: item.salePrice,
-              discountType: item.discountType,
-              discountValue: item.discountValue,
-              itemTotal: item.total,
-            ),
+            (item) {
+              var selectedBatchRate = 0.0;
+              if (item.selectedLotNo != null && item.selectedLotNo!.isNotEmpty) {
+                final match = item.availableLots.firstWhere(
+                  (lot) => lot.lotNo == item.selectedLotNo,
+                  orElse: () => PurchaseStockLot(
+                    lotNo: '',
+                    purchaseNo: '',
+                    purchaseDate: '',
+                    supplierName: '',
+                    productCode: '',
+                    productName: '',
+                    unit: '',
+                    qty: 0,
+                    remainingQty: 0,
+                    purchaseRate: 0.0,
+                  ),
+                );
+                selectedBatchRate = match.purchaseRate;
+              } else if (item.selectedPurchaseNo != null &&
+                  item.selectedPurchaseNo!.isNotEmpty) {
+                final match = item.availableLots.firstWhere(
+                  (lot) => lot.purchaseNo == item.selectedPurchaseNo,
+                  orElse: () => PurchaseStockLot(
+                    lotNo: '',
+                    purchaseNo: '',
+                    purchaseDate: '',
+                    supplierName: '',
+                    productCode: '',
+                    productName: '',
+                    unit: '',
+                    qty: 0,
+                    remainingQty: 0,
+                    purchaseRate: 0.0,
+                  ),
+                );
+                selectedBatchRate = match.purchaseRate;
+              }
+
+              return SaleHistoryProduct(
+                productCode: item.product.productCode,
+                productName: item.product.productName,
+                qty: item.qty,
+                mrp: item.product.mrpPrice,
+                salePrice: item.salePrice,
+                discountType: item.discountType,
+                discountValue: item.discountValue,
+                itemTotal: item.total,
+                selectedLotNo: item.selectedLotNo ?? '',
+                selectedPurchaseNo: item.selectedPurchaseNo ?? '',
+                selectedPurchaseDate: item.selectedPurchaseDate ?? '',
+                selectedPurchaseRate: selectedBatchRate,
+              );
+            },
           )
           .toList(),
       grandTotal: _grandTotal,
@@ -9150,10 +9383,12 @@ class _NewSalePageState extends State<NewSalePage> {
   }
 
   Future<void> _updateSelectedPartyReceivableBalance() async {
-    if (_isEstimate) return;
+    if (_saleType != 'Credit') return;
 
     final saleBalance = _balance;
-    final customerName = _customerController.text.trim();
+    final customerName = _selectedCustomerName.isNotEmpty
+        ? _selectedCustomerName.trim()
+        : _customerController.text.trim();
     if (saleBalance <= 0 || customerName.isEmpty) return;
 
     final prefs = await SharedPreferences.getInstance();
@@ -9176,8 +9411,12 @@ class _NewSalePageState extends State<NewSalePage> {
       final partyName = (partyMap['partyName'] ?? '').toString().trim();
       final partyType = (partyMap['partyType'] ?? '').toString();
       final isCustomerParty = partyType == 'Customer' || partyType == 'Both';
-      if (updated || !isCustomerParty || partyName != customerName)
-        return partyMap;
+      final partyNameNorm = partyName.toLowerCase();
+      final customerNameNorm = customerName.toLowerCase();
+      final nameMatches = partyNameNorm == customerNameNorm ||
+          partyNameNorm.contains(customerNameNorm) ||
+          customerNameNorm.contains(partyNameNorm);
+      if (updated || !isCustomerParty || !nameMatches) return partyMap;
 
       final existingBalance =
           double.tryParse((partyMap['openingBalance'] ?? '0').toString()) ??
@@ -9222,6 +9461,7 @@ class _NewSalePageState extends State<NewSalePage> {
       _saleItems.fold(0.0, (sum, item) => sum + item.total);
   double get _balance {
     if (_saleItems.isEmpty) return 0.0;
+    if (_saleType == 'Cash') return 0.0;
     final paid = double.tryParse(_paidController.text) ?? 0.0;
     return _grandTotal - paid;
   }
@@ -9401,7 +9641,7 @@ class _NewSalePageState extends State<NewSalePage> {
 
   Widget _buildSaleItemRow(int index, SaleEntry item) {
     return SizedBox(
-      width: 1436,
+      width: 1420,
       height: 38,
       child: Row(
         children: [
@@ -9413,7 +9653,7 @@ class _NewSalePageState extends State<NewSalePage> {
           const SizedBox(width: 6),
           _saleTableTextCell(
             '${item.product.productCode} - ${item.product.productName}',
-            width: 352,
+            width: 320,
             productStyle: true,
           ),
           const SizedBox(width: 6),
@@ -9427,10 +9667,12 @@ class _NewSalePageState extends State<NewSalePage> {
             width: 112,
           ),
           const SizedBox(width: 6),
+          _buildBatchSelector(item),
+          const SizedBox(width: 6),
           _buildQtyControl(item),
           const SizedBox(width: 8),
           _buildNumericField(
-            width: 128,
+            width: 110,
             controller: item.salePriceController,
             onChanged: () => setState(() {}),
           ),
@@ -9441,7 +9683,7 @@ class _NewSalePageState extends State<NewSalePage> {
           const SizedBox(width: 6),
           _buildTaxTypeField(item),
           const SizedBox(width: 6),
-          _saleTableTextCell('0.00', width: 64),
+          _saleTableTextCell('0.00', width: 56),
           const SizedBox(width: 6),
           _saleTableTextCell(
             '₹${item.total.toStringAsFixed(2)}',
@@ -9464,6 +9706,172 @@ class _NewSalePageState extends State<NewSalePage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBatchSelector(SaleEntry item) {
+    final GlobalKey batchSelectorKey = GlobalKey();
+    final batchLabel = item.selectedPurchaseNo != null &&
+            item.selectedPurchaseNo!.isNotEmpty
+        ? item.selectedPurchaseNo!
+        : 'Batch';
+
+    return Container(
+      key: batchSelectorKey,
+      width: 80,
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: item.availableLots.isEmpty
+          ? Center(
+              child: Text(
+                'N/A',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          : GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: item.availableLots.length > 1
+                  ? () {
+                      final RenderBox button = batchSelectorKey.currentContext!
+                          .findRenderObject() as RenderBox;
+                      final OverlayState overlay = Overlay.of(context);
+                      final RenderBox overlayBox =
+                          overlay.context.findRenderObject() as RenderBox;
+
+                      final Offset position =
+                          button.localToGlobal(Offset.zero, ancestor: overlayBox);
+
+                      late OverlayEntry popupEntry;
+                      popupEntry = OverlayEntry(
+                        builder: (context) {
+                          return Stack(
+                            children: [
+                              Positioned.fill(
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: popupEntry.remove,
+                                  child: Container(color: Colors.transparent),
+                                ),
+                              ),
+                              Positioned(
+                                left: position.dx,
+                                top: position.dy + button.size.height,
+                                width: 200,
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: Container(
+                                    width: 200,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: SingleChildScrollView(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children:
+                                            item.availableLots.map((lot) {
+                                          return GestureDetector(
+                                            behavior:
+                                                HitTestBehavior.opaque,
+                                            onTap: () {
+                                              popupEntry.remove();
+                                              setState(() {
+                                                item.selectedLotNo = lot.lotNo;
+                                                item.selectedPurchaseNo =
+                                                    lot.purchaseNo;
+                                                item.selectedPurchaseDate =
+                                                    lot.purchaseDate;
+                                                item.selectedBatchAvailableQty =
+                                                    lot.remainingQty;
+                                              });
+                                            },
+                                            child: Container(
+                                              width: 200,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 8,
+                                              ),
+                                              alignment:
+                                                  Alignment.centerLeft,
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    '${lot.purchaseNo} (${lot.purchaseDate})',
+                                                    style: const TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: kPrimaryBlue,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    '₹${lot.purchaseRate.toStringAsFixed(2)} | Qty: ${lot.remainingQty}',
+                                                    style: const TextStyle(
+                                                      fontSize: 10,
+                                                      color:
+                                                          Color(0xFF64748B),
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+
+                      overlay.insert(popupEntry);
+                    }
+                  : null,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      batchLabel,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: kPrimaryBlue,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (item.availableLots.length > 1)
+                    const Icon(Icons.arrow_drop_down, size: 14),
+                ],
+              ),
+            ),
     );
   }
 
@@ -9568,7 +9976,7 @@ class _NewSalePageState extends State<NewSalePage> {
 
     return Container(
       key: discountTypeKey,
-      width: 76,
+      width: 70,
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
       decoration: BoxDecoration(
@@ -9678,7 +10086,7 @@ class _NewSalePageState extends State<NewSalePage> {
 
   Widget _buildDiscountValueField(SaleEntry item) {
     return Container(
-      width: 90,
+      width: 76,
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
@@ -9768,7 +10176,7 @@ class _NewSalePageState extends State<NewSalePage> {
 
     return Container(
       key: taxTypeKey,
-      width: 88,
+      width: 76,
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       alignment: Alignment.centerLeft,
@@ -10221,29 +10629,31 @@ class _NewSalePageState extends State<NewSalePage> {
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
-                        width: 1436,
+                        width: 1420,
                         height: 46,
                         child: Row(
                           children: [
                             _saleTableHeaderCell('S.No', width: 64),
                             const SizedBox(width: 6),
-                            _saleTableHeaderCell('Product', width: 352),
+                            _saleTableHeaderCell('Product', width: 320),
                             const SizedBox(width: 6),
                             _saleTableHeaderCell('Purchase', width: 112),
                             const SizedBox(width: 6),
                             _saleTableHeaderCell('MRP', width: 112),
                             const SizedBox(width: 6),
+                            _saleTableHeaderCell('Batch', width: 80),
+                            const SizedBox(width: 6),
                             _saleTableHeaderCell('Qty', width: 82),
                             const SizedBox(width: 8),
-                            _saleTableHeaderCell('Sale Price', width: 128),
+                            _saleTableHeaderCell('Sale Price', width: 110),
                             const SizedBox(width: 6),
-                            _saleTableHeaderCell('₹/%', width: 76),
+                            _saleTableHeaderCell('₹/%', width: 70),
                             const SizedBox(width: 8),
-                            _saleTableHeaderCell('Discount', width: 90),
+                            _saleTableHeaderCell('Discount', width: 76),
                             const SizedBox(width: 6),
-                            _saleTableHeaderCell('Tax Type', width: 88),
+                            _saleTableHeaderCell('Tax Type', width: 76),
                             const SizedBox(width: 6),
-                            _saleTableHeaderCell('Tax %', width: 64),
+                            _saleTableHeaderCell('Tax %', width: 56),
                             const SizedBox(width: 6),
                             _saleTableHeaderCell('Total', width: 150),
                             const SizedBox(width: 6),
@@ -10257,7 +10667,7 @@ class _NewSalePageState extends State<NewSalePage> {
                       const SizedBox(height: 8),
                       if (_saleItems.isEmpty)
                         const SizedBox(
-                          width: 1440,
+                          width: 1420,
                           height: 126,
                           child: Center(
                             child: Text(
@@ -10281,7 +10691,7 @@ class _NewSalePageState extends State<NewSalePage> {
                         ),
                       const SizedBox(height: 12),
                       SizedBox(
-                        width: 1436,
+                        width: 1420,
                         height: 48,
                         child: Row(
                           children: [
